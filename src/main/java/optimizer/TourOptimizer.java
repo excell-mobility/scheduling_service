@@ -23,14 +23,14 @@ public class TourOptimizer {
 	
 	public boolean findTimeslotForNewAppointment(Appointment appointment) {
 		
-		// TODO
+		// TODO check, if it is possible to include appointment in the list
 		return false;
 		
 	}
 
 	public Date getPossibleStartdateForNewAppointment(Appointment appointment) {
 		
-		// TODO
+		// TODO return a valid starting date for the new appointment
 		return null;
 		
 	}
