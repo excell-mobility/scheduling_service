@@ -4,33 +4,23 @@ import java.util.Date;
 
 public class Appointment {
 	
-	private GeoPoint startPosition;
-	private GeoPoint endPosition;
+	private GeoPoint position;
 	private Date startDate;
 	private Date endDate;
 	
-	public Appointment(GeoPoint startPosition, GeoPoint endPosition,
+	public Appointment(GeoPoint position,
 			Date startDate, Date endDate) {
-		this.startPosition = startPosition;
-		this.endPosition = endPosition;
+		this.position = position;
 		this.startDate = startDate;
 		this.endDate = endDate;
 	}
 
-	public GeoPoint getStartPosition() {
-		return startPosition;
+	public GeoPoint getPosition() {
+		return position;
 	}
 
-	public void setStartPosition(GeoPoint startPosition) {
-		this.startPosition = startPosition;
-	}
-
-	public GeoPoint getEndPosition() {
-		return endPosition;
-	}
-
-	public void setEndPosition(GeoPoint endPosition) {
-		this.endPosition = endPosition;
+	public void setPosition(GeoPoint position) {
+		this.position = position;
 	}
 
 	public Date getStartDate() {
@@ -47,16 +37,6 @@ public class Appointment {
 
 	public void setEndDate(Date endDate) {
 		this.endDate = endDate;
-	}
-	
-	public int getDurationOfAppointment() {
-		
-		if(startDate.before(endDate)) {
-			return (int) ((endDate.getTime() - startDate.getTime()) / 1000);
-		} else {
-			return 0;
-		}
-		
 	}
 
 }
