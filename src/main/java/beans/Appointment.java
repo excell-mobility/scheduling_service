@@ -39,4 +39,10 @@ public class Appointment {
 		this.endDate = endDate;
 	}
 
+	@Override
+	public String toString() {
+		return "Appointment [position=" + position + ", startDate=" + startDate
+				+ ", endDate=" + endDate + "]";
+	}
+
 }
