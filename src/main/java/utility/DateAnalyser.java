@@ -13,5 +13,11 @@ public class DateAnalyser {
 		}
 		
 	}
+	
+	public static Date getEarliestPossibleStartingDateWithBuffer(Date endDate, int travelTime) {
+		
+		return null;
+		
+	}
 
 }
