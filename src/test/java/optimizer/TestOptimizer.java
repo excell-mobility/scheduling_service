@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import beans.Appointment;
 import beans.GeoPoint;
+import beans.Timeslot;
 
 import com.google.common.collect.Lists;
 
@@ -52,8 +53,36 @@ public class TestOptimizer {
 	public void testAppointmentOptimization() throws JSONException, IOException {
 		
 		TourOptimizer optimizer = new TourOptimizer(appointments);
+		Timeslot possibleTimeslotForNewAppointment = optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30);
 		assertEquals(new GregorianCalendar(2015, 11, 10, 15, 05).getTime(), 
-				optimizer.getPossibleStartdateForNewAppointment(new GeoPoint(51.030306, 13.730407), 30));
+				possibleTimeslotForNewAppointment.getStartDate());
+		assertEquals(new GregorianCalendar(2015, 11, 10, 16, 53).getTime(), 
+				possibleTimeslotForNewAppointment.getEndDate());
+		
+	}
+	
+	@Test
+	public void testNullAppointmentOptimization() throws JSONException, IOException {		
+		
+		appointments = Lists.newArrayList();
+		appointments.add(new Appointment(new GeoPoint(51.042239, 13.731460),
+				new GregorianCalendar(2015, 11, 10, 9, 00).getTime(), new GregorianCalendar(2015, 11, 10, 10, 00).getTime()));
+		appointments.add(new Appointment(new GeoPoint(51.057536, 13.741229),
+				new GregorianCalendar(2015, 11, 10, 10, 00).getTime(), new GregorianCalendar(2015, 11, 10, 12, 00).getTime()));
+		appointments.add(new Appointment(new GeoPoint(51.052599, 13.752138),
+				new GregorianCalendar(2015, 11, 10, 12, 30).getTime(), new GregorianCalendar(2015, 11, 10, 15, 00).getTime()));
+		TourOptimizer optimizer = new TourOptimizer(appointments);
+		assertNull(optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30));
+		
+		appointments = Lists.newArrayList();
+		appointments.add(new Appointment(new GeoPoint(51.042239, 13.731460),
+				new GregorianCalendar(2015, 11, 10, 9, 00).getTime(), new GregorianCalendar(2015, 11, 10, 10, 00).getTime()));
+		appointments.add(new Appointment(new GeoPoint(51.057536, 13.741229),
+				new GregorianCalendar(2015, 11, 10, 10, 00).getTime(), new GregorianCalendar(2015, 11, 10, 12, 00).getTime()));
+		appointments.add(new Appointment(new GeoPoint(51.052599, 13.752138),
+				new GregorianCalendar(2015, 11, 10, 12, 40).getTime(), new GregorianCalendar(2015, 11, 10, 15, 00).getTime()));
+		optimizer = new TourOptimizer(appointments);
+		assertNull(optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30));
 		
 	}
 

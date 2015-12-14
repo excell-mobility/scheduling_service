@@ -1,7 +1,6 @@
 package optimizer;
 
 import java.io.IOException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.TreeMap;
@@ -13,6 +12,7 @@ import utility.DateAnalyser;
 import utility.MeasureConverter;
 import beans.Appointment;
 import beans.GeoPoint;
+import beans.Timeslot;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -53,11 +53,12 @@ public class TourOptimizer {
 		
 	}
 
-	public Date getPossibleStartdateForNewAppointment(GeoPoint location, int durationOfAppointmentInMin) throws JSONException, IOException {
+	public Timeslot getPossibleTimeslotForNewAppointment(GeoPoint location, int durationOfAppointmentInMin) throws JSONException, IOException {
 		
 		// return a valid starting date for the new appointment	
 		TreeMap<Integer,Integer> timeIndexMapping = Maps.newTreeMap();
-		HashMap<Integer,Integer> saveTravelTimes = Maps.newHashMap();
+		HashMap<Integer,Integer> saveTravelTimesBefore = Maps.newHashMap();
+		HashMap<Integer,Integer> saveTravelTimesAfter = Maps.newHashMap();
 		
 		// find insertion position
 		for(int index = 0; index <= appointments.size() - 2; index++) {
@@ -77,16 +78,21 @@ public class TourOptimizer {
 				newAppointments.add(index + 1, new Appointment(location, null, null));
 				timeIndexMapping.put(calculateTravelTimes(newAppointments), index);
 				// save travel times for calculation
-				saveTravelTimes.put(index, travelTimeInMinutesBefore);
+				saveTravelTimesBefore.put(index, travelTimeInMinutesBefore);
+				saveTravelTimesAfter.put(index, travelTimeInMinutesAfter);
 			}
 		}
 		
 		// extract the start date of new appointment
-		if(saveTravelTimes.size() > 0 && timeIndexMapping.size() > 0) {
+		if(saveTravelTimesBefore.size() > 0 
+				&& timeIndexMapping.size() > 0
+				&& saveTravelTimesAfter.size() > 0) {
 			// the first value is the lowest travel time
 			int index = timeIndexMapping.firstEntry().getValue();
-			return DateAnalyser.getEarliestPossibleStartingDate(appointments.get(index).getEndDate(), 
-					saveTravelTimes.get(index).intValue(), false);
+			return new Timeslot(DateAnalyser.getEarliestPossibleStartingDate(appointments.get(index).getEndDate(), 
+					saveTravelTimesBefore.get(index).intValue(), false), 
+					DateAnalyser.getLatestPossibleEndDate(appointments.get(index + 1).getStartDate(), 
+							saveTravelTimesAfter.get(index).intValue(), false));
 		}
 		return null;
 		
