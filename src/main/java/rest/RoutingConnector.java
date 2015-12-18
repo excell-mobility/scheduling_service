@@ -19,14 +19,14 @@ public class RoutingConnector {
 	public static synchronized int getTravelTime(GeoPoint start,
 			GeoPoint end) throws JSONException, IOException {
 		
-		return (int) getResultString(start, end).get("timeInMs");
+		return getResultString(start, end).getInt("timeInMs");
 		
 	}
 	
 	public static synchronized double getTravelDistance(GeoPoint start,
 			GeoPoint end) throws JSONException, IOException {
 		
-		return (double) getResultString(start, end).get("distance");
+		return getResultString(start, end).getDouble("distance");
 		
 	}
 	
