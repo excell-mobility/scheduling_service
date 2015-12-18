@@ -35,6 +35,11 @@
 	  <artifactId>json-simple</artifactId>
 	  <version>1.1</version>
     </dependency>
+    <dependency>
+    	<groupId>excell</groupId>
+    	<artifactId>excellapis</artifactId>
+    	  <version>0.0.1-SNAPSHOT</version>
+    </dependency>
   </dependencies>
   
     <properties>
