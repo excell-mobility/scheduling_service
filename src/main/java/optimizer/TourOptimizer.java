@@ -64,29 +64,22 @@ public class TourOptimizer {
 		for(int index = 0; index <= appointments.size() - 2; index++) {
 			Appointment startAppointment = appointments.get(index);
 			Appointment endAppointment = appointments.get(index + 1);
-			int totalDurationForAppointment = durationOfAppointmentInMin;
 			int durationBetweenTwoAppointments = DateAnalyser.getDurationBetweenDates(
 					startAppointment.getEndDate(), endAppointment.getStartDate());
-
-			while (totalDurationForAppointment <= durationBetweenTwoAppointments) {
-				// adding travel times to check if slot would still be fitting
-				int travelTimeInMinutesBefore = MeasureConverter.getTimeInMinutes(
-						RoutingConnector.getTravelTime(startAppointment.getPosition(), location));
-				totalDurationForAppointment += travelTimeInMinutesBefore;
-				
-				int travelTimeInMinutesAfter = MeasureConverter.getTimeInMinutes(
-						RoutingConnector.getTravelTime(location, endAppointment.getPosition()));
-				totalDurationForAppointment += travelTimeInMinutesAfter;
-				
-				// ok! now, calculate travel time of the whole route
+			int travelTimeInMinutesBefore = MeasureConverter.getTimeInMinutes(
+					RoutingConnector.getTravelTime(startAppointment.getPosition(), location));
+			int travelTimeInMinutesAfter = MeasureConverter.getTimeInMinutes(
+					RoutingConnector.getTravelTime(location, endAppointment.getPosition()));
+			
+			if((durationOfAppointmentInMin + travelTimeInMinutesBefore + travelTimeInMinutesAfter) 
+					< durationBetweenTwoAppointments) {
+				// calculate travel time of the whole route
 				List<Appointment> newAppointments = Lists.newArrayList(appointments);
 				newAppointments.add(index + 1, new Appointment(location, null, null));
 				timeIndexMapping.put(calculateTravelTimes(newAppointments), index);
-				
 				// save travel times for calculation
 				saveTravelTimesBefore.put(index, travelTimeInMinutesBefore);
 				saveTravelTimesAfter.put(index, travelTimeInMinutesAfter);
-				break;
 			}
 		}
 		
