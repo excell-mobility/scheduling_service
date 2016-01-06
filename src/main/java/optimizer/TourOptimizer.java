@@ -66,6 +66,12 @@ public class TourOptimizer {
 			Appointment endAppointment = appointments.get(index + 1);
 			int durationBetweenTwoAppointments = DateAnalyser.getDurationBetweenDates(
 					startAppointment.getEndDate(), endAppointment.getStartDate());
+			
+			// check, if appointment duration is smaller than time between appointments
+			if(durationOfAppointmentInMin >= durationBetweenTwoAppointments) {
+				continue;
+			}
+			
 			int travelTimeInMinutesBefore = MeasureConverter.getTimeInMinutes(
 					RoutingConnector.getTravelTime(startAppointment.getPosition(), location));
 			int travelTimeInMinutesAfter = MeasureConverter.getTimeInMinutes(
