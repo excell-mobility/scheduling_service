@@ -1,6 +1,7 @@
 package appointmentplanning;
 
 import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -10,6 +11,7 @@ import java.util.Map;
 
 import optimizer.TourOptimizer;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.simple.JSONObject;
 
@@ -17,12 +19,11 @@ import rest.CalendarConnector;
 import rest.RoutingConnector;
 import utility.DateAnalyser;
 import utility.MeasureConverter;
-import beans.Appointment;
+import beans.CalendarAppointment;
 import beans.GeoPoint;
 import beans.Timeslot;
 import beans.WorkingDay;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import extraction.AppointmentExtraction;
@@ -44,28 +45,22 @@ public class AppointmentPlanner {
 		String appointmentWeekDay = dateFormat.
 				format(new GregorianCalendar(year, month, day).getTime()).toLowerCase();
 		
-		// TODO get possible appointments from calendar service
-		List<Appointment> appointments = Lists.newArrayList();
-		appointments.add(new Appointment(new GeoPoint(51.042239, 13.731460),
-				new GregorianCalendar(2015, 11, 10, 9, 00).getTime(), new GregorianCalendar(2015, 11, 10, 11, 00).getTime()));
-		appointments.add(new Appointment(new GeoPoint(51.057536, 13.741229),
-				new GregorianCalendar(2015, 11, 10, 12, 00).getTime(), new GregorianCalendar(2015, 11, 10, 13, 00).getTime()));
-		appointments.add(new Appointment(new GeoPoint(51.052599, 13.752138),
-				new GregorianCalendar(2015, 11, 10, 14, 00).getTime(), new GregorianCalendar(2015, 11, 10, 16, 00).getTime()));
-		appointments.add(new Appointment(new GeoPoint(51.038104, 13.775029),
-				new GregorianCalendar(2015, 11, 10, 16, 30).getTime(), new GregorianCalendar(2015, 11, 10, 17, 00).getTime()));
-		
-		// find a possible time slot
-		optimizer.setAppointments(appointments);
-		GeoPoint appointmentLocation = new GeoPoint(appointmentLat, appointmentLon);
 		Timeslot timeslot = null;
 		try {
+			// get possible appointments from calendar service
+			JSONArray appointmentsForCalendar = CalendarConnector.getAppointmentsForCalendar("test");
+			AppointmentExtraction appointmentExtraction = new AppointmentExtraction();
+			List<CalendarAppointment> appointments = appointmentExtraction.extractAppointments(appointmentsForCalendar);
+			
+			// find a possible time slot
+			optimizer.setAppointments(appointments);
+			GeoPoint appointmentLocation = new GeoPoint(appointmentLat, appointmentLon);
+			
 			Map<String, WorkingDay> workingDays = Maps.newHashMap();
 			// extract working hours from calendar service, working hours are needed, 
 			// if there is not enough time between the appointments
 			org.json.JSONObject workingHoursForCalendar = 
 					CalendarConnector.getWorkingHoursForCalendar("test");
-			AppointmentExtraction appointmentExtraction = new AppointmentExtraction();
 			workingDays = appointmentExtraction.extractWorkingHours(workingHoursForCalendar);
 			
 			timeslot = optimizer.
@@ -112,7 +107,7 @@ public class AppointmentPlanner {
 				}
 				
 			}
-		} catch (JSONException | IOException e) {
+		} catch (JSONException | IOException | ParseException e) {
 			obj.put("Error", "No appointment planning possible!");
 		}
 		

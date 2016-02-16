@@ -10,7 +10,7 @@ import org.json.JSONException;
 import rest.RoutingConnector;
 import utility.DateAnalyser;
 import utility.MeasureConverter;
-import beans.Appointment;
+import beans.CalendarAppointment;
 import beans.GeoPoint;
 import beans.Timeslot;
 
@@ -19,29 +19,29 @@ import com.google.common.collect.Maps;
 
 public class TourOptimizer {
 	
-	private List<Appointment> appointments;
+	private List<CalendarAppointment> appointments;
 	
-	public TourOptimizer (List<Appointment> appointments) {
+	public TourOptimizer (List<CalendarAppointment> appointments) {
 		this.appointments = appointments;
 	}
 
-	public List<Appointment> getAppointments() {
+	public List<CalendarAppointment> getAppointments() {
 		return appointments;
 	}
 
-	public void setAppointments(List<Appointment> appointments) {
+	public void setAppointments(List<CalendarAppointment> appointments) {
 		this.appointments = appointments;
 	}
 	
-	public boolean checkTimeslotForNewAppointment(Appointment appointment) {
+	public boolean checkTimeslotForNewAppointment(CalendarAppointment appointment) {
 		
 		// check, if it is possible to include appointment in the list
 		int durationOfAppointment = DateAnalyser.getDurationBetweenDates(
 				appointment.getStartDate(), appointment.getEndDate());
 		for(int index = 0; index < appointments.size() - 2; index++) {
 			
-			Appointment startAppointment = appointments.get(index);
-			Appointment endAppointment = appointments.get(index + 1);
+			CalendarAppointment startAppointment = appointments.get(index);
+			CalendarAppointment endAppointment = appointments.get(index + 1);
 			int durationBetweenTwoAppointments = DateAnalyser.getDurationBetweenDates(
 					startAppointment.getEndDate(), endAppointment.getStartDate());
 			if(durationOfAppointment < durationBetweenTwoAppointments) {
@@ -62,8 +62,8 @@ public class TourOptimizer {
 		
 		// find insertion position
 		for(int index = 0; index <= appointments.size() - 2; index++) {
-			Appointment startAppointment = appointments.get(index);
-			Appointment endAppointment = appointments.get(index + 1);
+			CalendarAppointment startAppointment = appointments.get(index);
+			CalendarAppointment endAppointment = appointments.get(index + 1);
 			int durationBetweenTwoAppointments = DateAnalyser.getDurationBetweenDates(
 					startAppointment.getEndDate(), endAppointment.getStartDate());
 			
@@ -80,8 +80,8 @@ public class TourOptimizer {
 			if((durationOfAppointmentInMin + travelTimeInMinutesBefore + travelTimeInMinutesAfter) 
 					< durationBetweenTwoAppointments) {
 				// calculate travel time of the whole route
-				List<Appointment> newAppointments = Lists.newArrayList(appointments);
-				newAppointments.add(index + 1, new Appointment(location, null, null));
+				List<CalendarAppointment> newAppointments = Lists.newArrayList(appointments);
+				newAppointments.add(index + 1, new CalendarAppointment(location, null, null, null));
 				timeIndexMapping.put(calculateTravelTimes(newAppointments), index);
 				// save travel times for calculation
 				saveTravelTimesBefore.put(index, travelTimeInMinutesBefore);
@@ -104,7 +104,7 @@ public class TourOptimizer {
 		
 	}
 
-	private int calculateTravelTimes(List<Appointment> newAppointments) throws JSONException, IOException {
+	private int calculateTravelTimes(List<CalendarAppointment> newAppointments) throws JSONException, IOException {
 		
 		int travelTimeSum = 0;
 		for(int index = 0; index < newAppointments.size() - 2; index++) {
