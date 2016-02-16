@@ -1,9 +1,11 @@
 package appointmentplanning;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import optimizer.TourOptimizer;
@@ -11,6 +13,7 @@ import optimizer.TourOptimizer;
 import org.json.JSONException;
 import org.json.simple.JSONObject;
 
+import rest.CalendarConnector;
 import rest.RoutingConnector;
 import utility.DateAnalyser;
 import utility.MeasureConverter;
@@ -21,6 +24,8 @@ import beans.WorkingDay;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
+import extraction.AppointmentExtraction;
 
 public class AppointmentPlanner {
 	
@@ -35,7 +40,9 @@ public class AppointmentPlanner {
 			Integer durationOfAppointmentInMin, Double appointmentLat, Double appointmentLon) {
 		
 		JSONObject obj = new JSONObject();
-		Date appointmentDate = new GregorianCalendar(year, month, day).getTime();
+		SimpleDateFormat dateFormat = new SimpleDateFormat("EEEEEEEE", Locale.ENGLISH);
+		String appointmentWeekDay = dateFormat.
+				format(new GregorianCalendar(year, month, day).getTime()).toLowerCase();
 		
 		// TODO get possible appointments from calendar service
 		List<Appointment> appointments = Lists.newArrayList();
@@ -47,24 +54,27 @@ public class AppointmentPlanner {
 				new GregorianCalendar(2015, 11, 10, 14, 00).getTime(), new GregorianCalendar(2015, 11, 10, 16, 00).getTime()));
 		appointments.add(new Appointment(new GeoPoint(51.038104, 13.775029),
 				new GregorianCalendar(2015, 11, 10, 16, 30).getTime(), new GregorianCalendar(2015, 11, 10, 17, 00).getTime()));
-		// TODO extract working hours from calendar service, working hours are needed, 
-		// if there is not enough time between the appointments
-		Map<Date, WorkingDay> workingDays = Maps.newHashMap();
-		workingDays.put(new GregorianCalendar(2015, 11, 10).getTime(), 
-				new WorkingDay(12, 0, 13, 0, 8, 00, 19, 0));
 		
 		// find a possible time slot
 		optimizer.setAppointments(appointments);
 		GeoPoint appointmentLocation = new GeoPoint(appointmentLat, appointmentLon);
 		Timeslot timeslot = null;
 		try {
+			Map<String, WorkingDay> workingDays = Maps.newHashMap();
+			// extract working hours from calendar service, working hours are needed, 
+			// if there is not enough time between the appointments
+			org.json.JSONObject workingHoursForCalendar = 
+					CalendarConnector.getWorkingHoursForCalendar("test");
+			AppointmentExtraction appointmentExtraction = new AppointmentExtraction();
+			workingDays = appointmentExtraction.extractWorkingHours(workingHoursForCalendar);
+			
 			timeslot = optimizer.
 					getPossibleTimeslotForNewAppointment(appointmentLocation, durationOfAppointmentInMin);
 			// check, if it is possible to put the new appointment at the beginning or end
 			if(timeslot == null && appointments != null 
 					&& appointments.size() > 0) {
 				// try to insert the appointment at the beginning
-				WorkingDay workingDay = workingDays.get(appointmentDate);
+				WorkingDay workingDay = workingDays.get(appointmentWeekDay);
 				if(workingDay != null) {
 					Date beginningDate = new GregorianCalendar(year, month, day, 
 							workingDay.getStartWorkingHour(), workingDay.getStartWorkingMinute()).getTime();
