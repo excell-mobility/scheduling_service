@@ -104,7 +104,7 @@ public class TourOptimizer {
 		
 	}
 
-	private int calculateTravelTimes(List<CalendarAppointment> newAppointments) throws JSONException, IOException {
+	public int calculateTravelTimes(List<CalendarAppointment> newAppointments) throws JSONException, IOException {
 		
 		int travelTimeSum = 0;
 		for(int index = 0; index < newAppointments.size() - 2; index++) {
