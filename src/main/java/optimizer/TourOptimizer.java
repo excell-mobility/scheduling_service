@@ -3,6 +3,7 @@ package optimizer;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.NavigableSet;
 import java.util.TreeMap;
 
 import org.json.JSONException;
@@ -53,13 +54,13 @@ public class TourOptimizer {
 		
 	}
 
-	public Timeslot getPossibleTimeslotForNewAppointment(GeoPoint location, int durationOfAppointmentInMin) throws JSONException, IOException {
+	public List<Timeslot> getPossibleTimeslotForNewAppointment(GeoPoint location, int durationOfAppointmentInMin) throws JSONException, IOException {
 		
 		// return a valid starting date for the new appointment	
 		TreeMap<Integer,Integer> timeIndexMapping = Maps.newTreeMap();
 		HashMap<Integer,Integer> saveTravelTimesBefore = Maps.newHashMap();
 		HashMap<Integer,Integer> saveTravelTimesAfter = Maps.newHashMap();
-		
+
 		// find insertion position
 		for(int index = 0; index <= appointments.size() - 2; index++) {
 			CalendarAppointment startAppointment = appointments.get(index);
@@ -94,13 +95,21 @@ public class TourOptimizer {
 				&& timeIndexMapping.size() > 0
 				&& saveTravelTimesAfter.size() > 0) {
 			// the first value is the lowest travel time
-			int index = timeIndexMapping.firstEntry().getValue();
-			return new Timeslot(DateAnalyser.getEarliestPossibleStartingDate(appointments.get(index).getEndDate(), 
-					saveTravelTimesBefore.get(index).intValue(), false), 
-					DateAnalyser.getLatestPossibleEndDate(appointments.get(index + 1).getStartDate(), 
-							saveTravelTimesAfter.get(index).intValue(), false));
+			NavigableSet<Integer> descendingKeySet = timeIndexMapping.descendingKeySet().descendingSet();
+			List<Timeslot> timeslots = Lists.newLinkedList();
+			// add all possible time slots
+			// first one is the possible time slot with the best travel time
+			for(int index: descendingKeySet) {
+				int valueIndex = timeIndexMapping.get(index);
+				timeslots.add(new Timeslot(DateAnalyser.getEarliestPossibleStartingDate(appointments.get(valueIndex).getEndDate(), 
+						saveTravelTimesBefore.get(valueIndex).intValue(), false), 
+						DateAnalyser.getLatestPossibleEndDate(appointments.get(valueIndex + 1).getStartDate(), 
+								saveTravelTimesAfter.get(valueIndex).intValue(), false)));
+			}
+			return timeslots;
 		}
-		return null;
+		// return empty list, if there are no valid appointments 
+		return Lists.newLinkedList();
 		
 	}
 

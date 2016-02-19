@@ -1,6 +1,6 @@
 package planningapi;
 
-import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -12,7 +12,7 @@ import appointmentplanning.AppointmentPlanner;
 public class PlanningController {	
 	
     @RequestMapping("/appointmentplanning")
-    public JSONObject routing(@RequestParam(value="year", defaultValue="2015") Integer year,
+    public JSONArray routing(@RequestParam(value="year", defaultValue="2015") Integer year,
     		@RequestParam(value="month", defaultValue="1") Integer month,
     		@RequestParam(value="day", defaultValue="1") Integer day,
     		@RequestParam(value="durationInMin", defaultValue="60") Integer durationOfAppointmentInMin,

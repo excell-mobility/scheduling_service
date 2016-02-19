@@ -11,9 +11,9 @@ import java.util.Map;
 
 import optimizer.TourOptimizer;
 
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
+import org.json.simple.JSONArray;
 
 import rest.CalendarConnector;
 import rest.RoutingConnector;
@@ -24,6 +24,7 @@ import beans.GeoPoint;
 import beans.Timeslot;
 import beans.WorkingDay;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import extraction.AppointmentExtraction;
@@ -37,18 +38,20 @@ public class AppointmentPlanner {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public JSONObject startPlanning(Integer year, Integer month, Integer day, 
+	public JSONArray startPlanning(Integer year, Integer month, Integer day, 
 			Integer durationOfAppointmentInMin, Double appointmentLat, Double appointmentLon) {
 		
-		JSONObject obj = new JSONObject();
+		JSONArray obj = new JSONArray();
 		SimpleDateFormat dateFormat = new SimpleDateFormat("EEEEEEEE", Locale.ENGLISH);
 		String appointmentWeekDay = dateFormat.
 				format(new GregorianCalendar(year, month, day).getTime()).toLowerCase();
 		
-		Timeslot timeslot = null;
+		List<Timeslot> timeslots = Lists.newLinkedList();
 		try {
+			// TODO change calendar identifier for CeBIT
+			String calendarID = "test";
 			// get possible appointments from calendar service
-			JSONArray appointmentsForCalendar = CalendarConnector.getAppointmentsForCalendar("test");
+			org.json.JSONArray appointmentsForCalendar = CalendarConnector.getAppointmentsForCalendar(calendarID);
 			AppointmentExtraction appointmentExtraction = new AppointmentExtraction();
 			List<CalendarAppointment> appointments = appointmentExtraction.extractAppointments(appointmentsForCalendar);
 			
@@ -60,13 +63,13 @@ public class AppointmentPlanner {
 			// extract working hours from calendar service, working hours are needed, 
 			// if there is not enough time between the appointments
 			org.json.JSONObject workingHoursForCalendar = 
-					CalendarConnector.getWorkingHoursForCalendar("test");
+					CalendarConnector.getWorkingHoursForCalendar(calendarID);
 			workingDays = appointmentExtraction.extractWorkingHours(workingHoursForCalendar);
 			
-			timeslot = optimizer.
+			timeslots = optimizer.
 					getPossibleTimeslotForNewAppointment(appointmentLocation, durationOfAppointmentInMin);
 			// check, if it is possible to put the new appointment at the beginning or end
-			if(timeslot == null && appointments != null 
+			if(appointments != null 
 					&& appointments.size() > 0) {
 				// try to insert the appointment at the beginning
 				WorkingDay workingDay = workingDays.get(appointmentWeekDay);
@@ -87,38 +90,52 @@ public class AppointmentPlanner {
 						// add the travel time and create a new time slot
 						if((durationBetweenBeginningAndAppointment - travelTimeInMinutes)
 								> durationOfAppointmentInMin) {
-							timeslot = new Timeslot(beginningDate, 
+							timeslots.add(new Timeslot(beginningDate, 
 									DateAnalyser.getLatestPossibleEndDate(latestEndDate, 
-											travelTimeInMinutes, false));
+											travelTimeInMinutes, false)));
 						}
 					} 
 					// try to insert the appoint at the end
-					if (timeslot == null && (durationBetweenEndAndAppointment > durationOfAppointmentInMin)) {
+					if (durationBetweenEndAndAppointment > durationOfAppointmentInMin) {
 						int travelTimeInMinutes = MeasureConverter.getTimeInMinutes(
 								RoutingConnector.getTravelTime(appointments.get(appointments.size() - 1).getPosition(), 
 										appointmentLocation));
 						// add the travel time and create a new time slot
 						if((durationBetweenEndAndAppointment - travelTimeInMinutes)
 								> durationOfAppointmentInMin) {
-							timeslot = new Timeslot(DateAnalyser.getEarliestPossibleStartingDate(
-									latestStartEndDate, travelTimeInMinutes, false), endDate);
+							timeslots.add(new Timeslot(DateAnalyser.getEarliestPossibleStartingDate(
+									latestStartEndDate, travelTimeInMinutes, false), endDate));
 						}
 					}
 				}
 				
 			}
 		} catch (JSONException | IOException | ParseException e) {
-			obj.put("Error", "No appointment planning possible!");
+			Map<String, String> message = Maps.newHashMap();
+			message.put("Error", "No appointment planning possible!");
+			obj.add(0, message);
 		}
 		
 		// check the result from tour optimization
-		if(timeslot == null) {
-			obj.put("Error", "No appointment planning possible!");
+		if(timeslots.isEmpty()) {
+			Map<String, String> message = Maps.newHashMap();
+			message.put("Error", "No appointment planning possible!");
+			obj.add(0, message);
 		} else {
-			obj.put("startTimeslot", timeslot.getStartDate());
-			obj.put("endTimeslot", timeslot.getEndDate());
+			// create json array and add appointments
+			Integer id = 1;
+			GeoPoint positionOfAppointment = new GeoPoint(appointmentLat, appointmentLon);
+			for(Timeslot timeslot: timeslots) {
+				CalendarAppointment appointment = new CalendarAppointment(positionOfAppointment, 
+						timeslot.getStartDate(), DateAnalyser.
+						getEarliestPossibleStartingDate(timeslot.getStartDate(), 
+								durationOfAppointmentInMin, false), id.toString());
+				// json object is needed to create valid json
+				JSONObject jsonObject = new JSONObject(appointment);
+				obj.add(jsonObject);
+				id++;
+			}
 		}
-		
 		// return the time slot or error message
 		return obj;
 		

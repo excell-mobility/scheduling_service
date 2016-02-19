@@ -2,7 +2,6 @@ package optimizer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -37,6 +36,24 @@ public class TestOptimizer {
 				new GregorianCalendar(2015, 11, 10, 17, 00).getTime(), new GregorianCalendar(2015, 11, 10, 18, 00).getTime(), "4"));
 	}
 	
+	@Test 
+	public void testCheckOnlyTwoAppointments() throws JSONException, IOException {
+		
+		TourOptimizer optimizer = new TourOptimizer(appointments);
+		appointments.remove(0);
+		appointments.remove(0);
+		List<Timeslot> possibleTimeslotForNewAppointment = 
+				optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 60);
+		assertEquals(new GregorianCalendar(2015, 11, 10, 15, 05).getTime(), 
+				possibleTimeslotForNewAppointment.get(0).getStartDate());
+		assertEquals(new GregorianCalendar(2015, 11, 10, 16, 53).getTime(), 
+				possibleTimeslotForNewAppointment.get(0).getEndDate());
+		possibleTimeslotForNewAppointment = 
+				optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 109);
+		assertTrue(possibleTimeslotForNewAppointment.isEmpty());
+		
+	}
+	
 	@Test
 	public void testCheckTimeslotForNewAppointment() {
 		
@@ -56,11 +73,11 @@ public class TestOptimizer {
 	public void testAppointmentOptimization() throws JSONException, IOException {
 		
 		TourOptimizer optimizer = new TourOptimizer(appointments);
-		Timeslot possibleTimeslotForNewAppointment = optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30);
+		List<Timeslot> possibleTimeslotForNewAppointment = optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30);
 		assertEquals(new GregorianCalendar(2015, 11, 10, 15, 05).getTime(), 
-				possibleTimeslotForNewAppointment.getStartDate());
+				possibleTimeslotForNewAppointment.get(0).getStartDate());
 		assertEquals(new GregorianCalendar(2015, 11, 10, 16, 53).getTime(), 
-				possibleTimeslotForNewAppointment.getEndDate());
+				possibleTimeslotForNewAppointment.get(0).getEndDate());
 		
 	}
 	
@@ -75,7 +92,7 @@ public class TestOptimizer {
 		appointments.add(new CalendarAppointment(new GeoPoint(51.052599, 13.752138),
 				new GregorianCalendar(2015, 11, 10, 12, 30).getTime(), new GregorianCalendar(2015, 11, 10, 15, 00).getTime(), "3"));
 		TourOptimizer optimizer = new TourOptimizer(appointments);
-		assertNull(optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30));
+		assertTrue(optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30).isEmpty());
 		
 		appointments = Lists.newArrayList();
 		appointments.add(new CalendarAppointment(new GeoPoint(51.042239, 13.731460),
@@ -85,7 +102,7 @@ public class TestOptimizer {
 		appointments.add(new CalendarAppointment(new GeoPoint(51.052599, 13.752138),
 				new GregorianCalendar(2015, 11, 10, 12, 40).getTime(), new GregorianCalendar(2015, 11, 10, 15, 00).getTime(), "3"));
 		optimizer = new TourOptimizer(appointments);
-		assertNull(optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30));
+		assertTrue(optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30).isEmpty());
 		
 	}
 
