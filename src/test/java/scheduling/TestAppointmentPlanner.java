@@ -1,4 +1,4 @@
-package appointmentplanning;
+package scheduling;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -6,6 +6,8 @@ import static org.junit.Assert.assertTrue;
 import org.json.simple.JSONArray;
 import org.junit.Before;
 import org.junit.Test;
+
+import scheduling.component.AppointmentPlanner;
 
 public class TestAppointmentPlanner {
 	

@@ -18,6 +18,8 @@ import beans.Timeslot;
 
 import com.google.common.collect.Lists;
 
+import scheduling.component.TourOptimizer;
+
 public class TestOptimizer {
 	
 	List<CalendarAppointment> appointments;

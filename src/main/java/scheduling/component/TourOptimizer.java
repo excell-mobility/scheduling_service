@@ -1,6 +1,7 @@
-package optimizer;
+package scheduling.component;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.NavigableSet;
@@ -20,7 +21,7 @@ import com.google.common.collect.Maps;
 
 public class TourOptimizer {
 	
-	private List<CalendarAppointment> appointments;
+	private List<CalendarAppointment> appointments = new ArrayList<CalendarAppointment>();
 	
 	public TourOptimizer (List<CalendarAppointment> appointments) {
 		this.appointments = appointments;

@@ -1,4 +1,4 @@
-package appointmentplanning;
+package scheduling.component;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -9,11 +9,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import optimizer.TourOptimizer;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.simple.JSONArray;
+import org.springframework.stereotype.Component;
 
 import rest.CalendarConnector;
 import rest.RoutingConnector;
@@ -29,6 +28,7 @@ import com.google.common.collect.Maps;
 
 import extraction.AppointmentExtraction;
 
+@Component
 public class AppointmentPlanner {
 	
 	private TourOptimizer optimizer;
@@ -44,7 +44,7 @@ public class AppointmentPlanner {
 		JSONArray obj = new JSONArray();
 		SimpleDateFormat dateFormat = new SimpleDateFormat("EEEEEEEE", Locale.ENGLISH);
 		String appointmentWeekDay = dateFormat.
-				format(new GregorianCalendar(year, month, day).getTime()).toLowerCase();
+				format(new GregorianCalendar(year, month-1, day).getTime()).toLowerCase();
 		
 		List<Timeslot> timeslots = Lists.newLinkedList();
 		try {
@@ -74,9 +74,9 @@ public class AppointmentPlanner {
 				// try to insert the appointment at the beginning
 				WorkingDay workingDay = workingDays.get(appointmentWeekDay);
 				if(workingDay != null) {
-					Date beginningDate = new GregorianCalendar(year, month, day, 
+					Date beginningDate = new GregorianCalendar(year, month-1, day, 
 							workingDay.getStartWorkingHour(), workingDay.getStartWorkingMinute()).getTime();
-					Date endDate = new GregorianCalendar(year, month, day, 
+					Date endDate = new GregorianCalendar(year, month-1, day, 
 							workingDay.getEndWorkingHour(), workingDay.getEndWorkingMinute()).getTime();
 					Date latestEndDate = appointments.get(0).getStartDate();
 					Date latestStartEndDate = appointments.get(appointments.size() - 1).getEndDate();

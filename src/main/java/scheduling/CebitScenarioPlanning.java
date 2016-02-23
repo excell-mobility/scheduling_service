@@ -1,4 +1,4 @@
-package cebitplanning;
+package scheduling;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -13,7 +13,7 @@ import com.google.common.collect.Maps;
 
 import beans.CalendarAppointment;
 import beans.GeoPoint;
-import optimizer.TourOptimizer;
+import scheduling.component.TourOptimizer;
 
 public class CebitScenarioPlanning {
 
