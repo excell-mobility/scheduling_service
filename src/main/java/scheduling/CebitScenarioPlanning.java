@@ -20,7 +20,7 @@ public class CebitScenarioPlanning {
 	public static void main(String[] args) throws JSONException, IOException {
 		
 		// tour optimizer for calculating travel times
-		TourOptimizer optimizer =  new TourOptimizer(null);
+		TourOptimizer optimizer =  new TourOptimizer();
 		
 		// create list with appointments
 		List<CalendarAppointment> appointments = Lists.newLinkedList();

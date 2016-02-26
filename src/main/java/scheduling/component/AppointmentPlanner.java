@@ -34,7 +34,7 @@ public class AppointmentPlanner {
 	private TourOptimizer optimizer;
 
 	public AppointmentPlanner() {
-		optimizer = new TourOptimizer(null);
+		optimizer = new TourOptimizer();
 	}
 	
 	public List<PlanningResponse> startPlanning(Integer year, Integer month, Integer day, 
@@ -58,7 +58,7 @@ public class AppointmentPlanner {
 				AppointmentExtraction appointmentExtraction = new AppointmentExtraction();
 				
 				// create list for possible time slots per user
-				List<Timeslot> timeslots = Lists.newLinkedList();
+				List<PlanningResponse> timeslots = Lists.newLinkedList();
 				
 				// extract working hours from calendar service, working hours are needed, 
 				// if there is not enough time between the appointments
@@ -72,8 +72,8 @@ public class AppointmentPlanner {
 				// check if user works on the selected day
 				if (workingDay != null) {
 					// get start and end position for user
-					GeoPoint startPosition = new GeoPoint(51.029,13.736);
-					//GeoPoint endPosition = startPosition;
+					GeoPoint startPosition = new GeoPoint(51.030201,13.727380);
+					GeoPoint endPosition = startPosition;
 				
 					// create appointment location
 					GeoPoint appointmentLocation = new GeoPoint(appointmentLat, appointmentLon);
@@ -105,49 +105,26 @@ public class AppointmentPlanner {
 						
 						// only add time slot if duration of appointment does not exceed the end of the working day
 						if (endFirstAppointment.before(endDate))
-							timeslots.add(new Timeslot(beginFirstAppointment, endFirstAppointment));
+							timeslots.add(new PlanningResponse(
+									travelTimeInMinutes * 2,
+									new Timeslot(beginFirstAppointment, endFirstAppointment),
+									calendarID
+									));
 					}
 					else {			
 						// find a possible time slot
-						optimizer.setAppointments(appointments);				
+						optimizer.setAppointments(appointments);
+						optimizer.setBeginWork(beginningDate);
+						optimizer.setEndWork(endDate);
+						optimizer.setBeginLocation(startPosition);
+						optimizer.setEndLocation(endPosition);
+						optimizer.setCalendarId(calendarID);
 						timeslots = optimizer.getPossibleTimeslotForNewAppointment(appointmentLocation, durationOfAppointmentInMin);
-								
-						// check, if it is possible to put the new appointment at the beginning or end
-						Date latestEndDate = appointments.get(0).getStartDate();
-						Date latestStartEndDate = appointments.get(appointments.size() - 1).getEndDate();
-						int durationBetweenBeginningAndAppointment = DateAnalyser.
-								getDurationBetweenDates(beginningDate, latestEndDate);
-						int durationBetweenEndAndAppointment = DateAnalyser.
-								getDurationBetweenDates(latestStartEndDate, endDate);
-						if(durationBetweenBeginningAndAppointment > durationOfAppointmentInMin) {
-							int travelTimeInMinutes = MeasureConverter.getTimeInMinutes(
-									RoutingConnector.getTravelTime(appointmentLocation, appointments.get(0).getPosition()));
-							// add the travel time and create a new time slot
-							if((durationBetweenBeginningAndAppointment - travelTimeInMinutes)
-									> durationOfAppointmentInMin) {
-								timeslots.add(new Timeslot(beginningDate, 
-										DateAnalyser.getLatestPossibleEndDate(latestEndDate, 
-												travelTimeInMinutes, false)));
-							}
-						}
-						// try to insert the appoint at the end
-						if (durationBetweenEndAndAppointment > durationOfAppointmentInMin) {
-							int travelTimeInMinutes = MeasureConverter.getTimeInMinutes(
-									RoutingConnector.getTravelTime(appointments.get(appointments.size() - 1).getPosition(), 
-											appointmentLocation));
-							// add the travel time and create a new time slot
-							if((durationBetweenEndAndAppointment - travelTimeInMinutes)
-									> durationOfAppointmentInMin) {
-								timeslots.add(new Timeslot(DateAnalyser.getEarliestPossibleStartingDate(
-										latestStartEndDate, travelTimeInMinutes, false), endDate));
-							}
-						}
 					}
 				}			
 					
 				// add found time slots to planningList
-				for (Timeslot slot : timeslots)
-					planningList.add(new PlanningResponse(slot, calendarID));				
+				planningList.addAll(timeslots);				
 			}
 		}
 		catch (JSONException | IOException | ParseException e) {
