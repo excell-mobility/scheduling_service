@@ -3,30 +3,30 @@ package scheduling.component;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.simple.JSONArray;
 import org.springframework.stereotype.Component;
-
-import rest.CalendarConnector;
-import rest.RoutingConnector;
-import utility.DateAnalyser;
-import utility.MeasureConverter;
-import beans.CalendarAppointment;
-import beans.GeoPoint;
-import beans.Timeslot;
-import beans.WorkingDay;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import beans.CalendarAppointment;
+import beans.GeoPoint;
+import beans.Timeslot;
+import beans.WorkingDay;
 import extraction.AppointmentExtraction;
+import rest.CalendarConnector;
+import rest.RoutingConnector;
+import scheduling.model.PlanningResponse;
+import utility.DateAnalyser;
+import utility.MeasureConverter;
 
 @Component
 public class AppointmentPlanner {
@@ -37,8 +37,7 @@ public class AppointmentPlanner {
 		optimizer = new TourOptimizer(null);
 	}
 	
-	@SuppressWarnings("unchecked")
-	public JSONArray startPlanning(Integer year, Integer month, Integer day, 
+	public List<PlanningResponse> startPlanning(Integer year, Integer month, Integer day, 
 			Integer durationOfAppointmentInMin, Double appointmentLat, Double appointmentLon) {
 		
 		JSONArray obj = new JSONArray();
@@ -46,99 +45,141 @@ public class AppointmentPlanner {
 		String appointmentWeekDay = dateFormat.
 				format(new GregorianCalendar(year, month-1, day).getTime()).toLowerCase();
 		
-		List<Timeslot> timeslots = Lists.newLinkedList();
+		List<PlanningResponse> planningList = Lists.newLinkedList();
+		
 		try {
-			// TODO change calendar identifier for CeBIT
-			String calendarID = "test";
-			// get possible appointments from calendar service
-			org.json.JSONArray appointmentsForCalendar = CalendarConnector.getAppointmentsForCalendar(calendarID);
-			AppointmentExtraction appointmentExtraction = new AppointmentExtraction();
-			List<CalendarAppointment> appointments = appointmentExtraction.extractAppointments(appointmentsForCalendar);
+			JSONArray calendarUsers = CalendarConnector.getCalendarUsers();
+			AppointmentExtraction extraction = new AppointmentExtraction();
+			List<String> extractCalendarUsers = extraction.extractCalendarUsers(calendarUsers);
 			
-			// find a possible time slot
-			optimizer.setAppointments(appointments);
-			GeoPoint appointmentLocation = new GeoPoint(appointmentLat, appointmentLon);
-			
-			Map<String, WorkingDay> workingDays = Maps.newHashMap();
-			// extract working hours from calendar service, working hours are needed, 
-			// if there is not enough time between the appointments
-			org.json.JSONObject workingHoursForCalendar = 
-					CalendarConnector.getWorkingHoursForCalendar(calendarID);
-			workingDays = appointmentExtraction.extractWorkingHours(workingHoursForCalendar);
-			
-			timeslots = optimizer.
-					getPossibleTimeslotForNewAppointment(appointmentLocation, durationOfAppointmentInMin);
-			// check, if it is possible to put the new appointment at the beginning or end
-			if(appointments != null 
-					&& appointments.size() > 0) {
-				// try to insert the appointment at the beginning
+			// loop over users
+			for(String calendarID : extractCalendarUsers) {
+
+				AppointmentExtraction appointmentExtraction = new AppointmentExtraction();
+				
+				// create list for possible time slots per user
+				List<Timeslot> timeslots = Lists.newLinkedList();
+				
+				// extract working hours from calendar service, working hours are needed, 
+				// if there is not enough time between the appointments
+				Map<String, WorkingDay> workingDays = Maps.newHashMap();
+				org.json.JSONObject workingHoursForCalendar = 
+						CalendarConnector.getWorkingHoursForCalendar(calendarID);
+				workingDays = appointmentExtraction.extractWorkingHours(workingHoursForCalendar);
+				
 				WorkingDay workingDay = workingDays.get(appointmentWeekDay);
-				if(workingDay != null) {
+				
+				// check if user works on the selected day
+				if (workingDay != null) {
+					// get start and end position for user
+					GeoPoint startPosition = new GeoPoint(51.029,13.736);
+					//GeoPoint endPosition = startPosition;
+				
+					// create appointment location
+					GeoPoint appointmentLocation = new GeoPoint(appointmentLat, appointmentLon);
+					
+					// get start and end of workingHours
 					Date beginningDate = new GregorianCalendar(year, month-1, day, 
 							workingDay.getStartWorkingHour(), workingDay.getStartWorkingMinute()).getTime();
 					Date endDate = new GregorianCalendar(year, month-1, day, 
 							workingDay.getEndWorkingHour(), workingDay.getEndWorkingMinute()).getTime();
-					Date latestEndDate = appointments.get(0).getStartDate();
-					Date latestStartEndDate = appointments.get(appointments.size() - 1).getEndDate();
-					int durationBetweenBeginningAndAppointment = DateAnalyser.
-							getDurationBetweenDates(beginningDate, latestEndDate);
-					int durationBetweenEndAndAppointment = DateAnalyser.
-							getDurationBetweenDates(latestStartEndDate, endDate);
-					if(durationBetweenBeginningAndAppointment > durationOfAppointmentInMin) {
+					
+					// get appointments already set in calendar service
+					JSONArray appointmentsForCalendar = CalendarConnector.getAppointmentsForCalendar(calendarID, "{}");
+					List<CalendarAppointment> appointments = appointmentExtraction.extractAppointments(appointmentsForCalendar);
+				
+					// no appointments found, choose earliest date possible from working hours
+					if (appointments == null || appointments.isEmpty()) {	
+						// calculate travel distance for starting position of user to appointment
 						int travelTimeInMinutes = MeasureConverter.getTimeInMinutes(
-								RoutingConnector.getTravelTime(appointmentLocation, appointments.get(0).getPosition()));
-						// add the travel time and create a new time slot
-						if((durationBetweenBeginningAndAppointment - travelTimeInMinutes)
-								> durationOfAppointmentInMin) {
-							timeslots.add(new Timeslot(beginningDate, 
-									DateAnalyser.getLatestPossibleEndDate(latestEndDate, 
-											travelTimeInMinutes, false)));
+								RoutingConnector.getTravelTime(startPosition, appointmentLocation));
+					
+						// get start time for first appointment incl. travel time
+						Date beginFirstAppointment = DateAnalyser.getEarliestPossibleStartingDate(
+								beginningDate, travelTimeInMinutes, false);
+						
+						Calendar calendar = Calendar.getInstance();
+						calendar.setTime(beginFirstAppointment);
+						calendar.add(Calendar.MINUTE, durationOfAppointmentInMin);
+						Date endFirstAppointment = calendar.getTime();
+						
+						// only add time slot if duration of appointment does not exceed the end of the working day
+						if (endFirstAppointment.before(endDate))
+							timeslots.add(new Timeslot(beginFirstAppointment, endFirstAppointment));
+					}
+					else {			
+						// find a possible time slot
+						optimizer.setAppointments(appointments);				
+						timeslots = optimizer.getPossibleTimeslotForNewAppointment(appointmentLocation, durationOfAppointmentInMin);
+								
+						// check, if it is possible to put the new appointment at the beginning or end
+						Date latestEndDate = appointments.get(0).getStartDate();
+						Date latestStartEndDate = appointments.get(appointments.size() - 1).getEndDate();
+						int durationBetweenBeginningAndAppointment = DateAnalyser.
+								getDurationBetweenDates(beginningDate, latestEndDate);
+						int durationBetweenEndAndAppointment = DateAnalyser.
+								getDurationBetweenDates(latestStartEndDate, endDate);
+						if(durationBetweenBeginningAndAppointment > durationOfAppointmentInMin) {
+							int travelTimeInMinutes = MeasureConverter.getTimeInMinutes(
+									RoutingConnector.getTravelTime(appointmentLocation, appointments.get(0).getPosition()));
+							// add the travel time and create a new time slot
+							if((durationBetweenBeginningAndAppointment - travelTimeInMinutes)
+									> durationOfAppointmentInMin) {
+								timeslots.add(new Timeslot(beginningDate, 
+										DateAnalyser.getLatestPossibleEndDate(latestEndDate, 
+												travelTimeInMinutes, false)));
+							}
 						}
-					} 
-					// try to insert the appoint at the end
-					if (durationBetweenEndAndAppointment > durationOfAppointmentInMin) {
-						int travelTimeInMinutes = MeasureConverter.getTimeInMinutes(
-								RoutingConnector.getTravelTime(appointments.get(appointments.size() - 1).getPosition(), 
-										appointmentLocation));
-						// add the travel time and create a new time slot
-						if((durationBetweenEndAndAppointment - travelTimeInMinutes)
-								> durationOfAppointmentInMin) {
-							timeslots.add(new Timeslot(DateAnalyser.getEarliestPossibleStartingDate(
-									latestStartEndDate, travelTimeInMinutes, false), endDate));
+						// try to insert the appoint at the end
+						if (durationBetweenEndAndAppointment > durationOfAppointmentInMin) {
+							int travelTimeInMinutes = MeasureConverter.getTimeInMinutes(
+									RoutingConnector.getTravelTime(appointments.get(appointments.size() - 1).getPosition(), 
+											appointmentLocation));
+							// add the travel time and create a new time slot
+							if((durationBetweenEndAndAppointment - travelTimeInMinutes)
+									> durationOfAppointmentInMin) {
+								timeslots.add(new Timeslot(DateAnalyser.getEarliestPossibleStartingDate(
+										latestStartEndDate, travelTimeInMinutes, false), endDate));
+							}
 						}
 					}
-				}
-				
+				}			
+					
+				// add found time slots to planningList
+				for (Timeslot slot : timeslots)
+					planningList.add(new PlanningResponse(slot, calendarID));				
 			}
-		} catch (JSONException | IOException | ParseException e) {
+		}
+		catch (JSONException | IOException | ParseException e) {
 			Map<String, String> message = Maps.newHashMap();
 			message.put("Error", "No appointment planning possible!");
-			obj.add(0, message);
+			obj.put(0, message);
 		}
 		
 		// check the result from tour optimization
-		if(timeslots.isEmpty()) {
+		/*if(planningList.isEmpty()) {
 			Map<String, String> message = Maps.newHashMap();
 			message.put("Error", "No appointment planning possible!");
-			obj.add(0, message);
-		} else {
+			obj.put(0, message);
+		} 
+		else {
 			// create json array and add appointments
 			Integer id = 1;
 			GeoPoint positionOfAppointment = new GeoPoint(appointmentLat, appointmentLon);
-			for(Timeslot timeslot: timeslots) {
+			for (PlanningResponse planning : planningList) {
 				CalendarAppointment appointment = new CalendarAppointment(positionOfAppointment, 
-						timeslot.getStartDate(), DateAnalyser.
-						getEarliestPossibleStartingDate(timeslot.getStartDate(), 
+						planning.getTimeslot().getStartDate(), DateAnalyser.
+						getEarliestPossibleStartingDate(planning.getTimeslot().getStartDate(), 
 								durationOfAppointmentInMin, false), id.toString());
 				// json object is needed to create valid json
 				JSONObject jsonObject = new JSONObject(appointment);
-				obj.add(jsonObject);
+				obj.put(jsonObject);
 				id++;
 			}
-		}
-		// return the time slot or error message
-		return obj;
+		}*/
 		
+		// return the list of time slots or error message
+		return planningList;
 	}
 
 }

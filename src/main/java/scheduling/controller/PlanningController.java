@@ -1,6 +1,8 @@
 package scheduling.controller;
 
-import org.json.simple.JSONArray;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -8,24 +10,27 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import scheduling.component.AppointmentPlanner;
-import beans.Timeslot;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
+import scheduling.component.AppointmentPlanner;
+import scheduling.model.PlanningResponse;
 
 @RestController
 @Api(value="/v1/scheduling")
-public class PlanningController {	
+public class PlanningController {
+	
+	@Autowired
+	private AppointmentPlanner appointmentPlanner;
 	
 	@RequestMapping(value = "/v1/scheduling", method = RequestMethod.GET)
     @ApiOperation(
     		value = "Get possible time slots for appointments", 
-    		response=Timeslot.class, 
+    		response=PlanningResponse.class, 
     		responseContainer="List",
     		produces = "application/json")
     @ResponseBody
-    public JSONArray scheduling(
+    public List<PlanningResponse> scheduling(
     		@ApiParam(name="year", value="Year of new appointment", defaultValue="2016") 
     		@RequestParam(value="year", defaultValue="2015") Integer year,
     		
@@ -44,7 +49,7 @@ public class PlanningController {
     		@ApiParam(name="appointmentLon", value="Longitude of new appointment", defaultValue="13.736") 
     		@RequestParam(value="appointmentLon", defaultValue="0.0") Double appointmentLon) {
         
-		return new AppointmentPlanner().startPlanning(year, month, day, 
+		return appointmentPlanner.startPlanning(year, month, day, 
         		durationOfAppointmentInMin, appointmentLat, appointmentLon);
     }
     
