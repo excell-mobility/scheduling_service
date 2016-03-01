@@ -4,11 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.util.GregorianCalendar;
 import java.util.List;
 
-import org.json.JSONException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,7 +36,7 @@ public class TestOptimizer {
 	}
 	
 	@Test 
-	public void testCheckOnlyTwoAppointments() throws JSONException, IOException {
+	public void testCheckOnlyTwoAppointments() throws Exception {
 		
 		TourOptimizer optimizer = new TourOptimizer();
 		
@@ -75,7 +73,7 @@ public class TestOptimizer {
 	}
 
 	@Test
-	public void testAppointmentOptimization() throws JSONException, IOException {
+	public void testAppointmentOptimization() throws Exception {
 		
 		TourOptimizer optimizer = new TourOptimizer();
 		optimizer.setAppointments(appointments);
@@ -88,7 +86,7 @@ public class TestOptimizer {
 	}
 	
 	@Test
-	public void testNullAppointmentOptimization() throws JSONException, IOException {		
+	public void testNullAppointmentOptimization() throws Exception {		
 		
 		appointments = Lists.newArrayList();
 		appointments.add(new CalendarAppointment(new GeoPoint(51.042239, 13.731460),

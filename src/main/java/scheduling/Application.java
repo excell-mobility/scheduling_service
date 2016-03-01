@@ -6,8 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.ResponseEntity;
 
-import com.google.common.collect.Sets;
-
 import scheduling.component.AppointmentPlanner;
 import scheduling.controller.PlanningController;
 import springfox.documentation.service.ApiInfo;

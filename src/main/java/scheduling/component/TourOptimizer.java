@@ -1,14 +1,11 @@
 package scheduling.component;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.TreeMap;
-
-import org.json.JSONException;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -117,7 +114,10 @@ public class TourOptimizer {
 		
 	}
 
-	public List<PlanningResponse> getPossibleTimeslotForNewAppointment(GeoPoint appointmentLocation, int durationOfAppointmentInMin) throws JSONException, IOException {
+	public List<PlanningResponse> getPossibleTimeslotForNewAppointment(
+			GeoPoint appointmentLocation, 
+			int durationOfAppointmentInMin
+			) throws Exception {
 		
 		// return a valid starting date for the new appointment	
 		TreeMap<Integer,Integer> timeIndexMapping = Maps.newTreeMap();
@@ -230,7 +230,7 @@ public class TourOptimizer {
 		
 	}
 
-	public int calculateTravelTimes(List<CalendarAppointment> newAppointments) throws JSONException, IOException {
+	public int calculateTravelTimes(List<CalendarAppointment> newAppointments) throws Exception {
 		
 		int travelTimeSum = 0;
 		for(int index = 0; index < newAppointments.size() - 2; index++) {

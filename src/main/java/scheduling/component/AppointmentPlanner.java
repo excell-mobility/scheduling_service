@@ -1,7 +1,5 @@
 package scheduling.component;
 
-import java.io.IOException;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -11,7 +9,6 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Lists;
@@ -127,7 +124,7 @@ public class AppointmentPlanner {
 				planningList.addAll(timeslots);				
 			}
 		}
-		catch (JSONException | IOException | ParseException e) {
+		catch (Exception e) {
 			Map<String, String> message = Maps.newHashMap();
 			message.put("Error", "No appointment planning possible!");
 			obj.put(0, message);
