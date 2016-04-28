@@ -1,6 +1,7 @@
 package scheduling.component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -240,6 +241,54 @@ public class TourOptimizer {
 		}
 		return travelTimeSum;
 		
+	}
+	
+	public List<Double[]> getOptimalRoute(GeoPoint[] points) throws Exception {
+		
+		int travelTime = 0;
+		Integer[] bestOrder = new Integer[points.length];
+		Integer[] order = new Integer[points.length];
+		
+		for (int i = 0; i < order.length; i++)
+			order[i] = i;
+		
+		Permutations<Integer> perm = new Permutations<Integer>(order);
+	    int count = 0;
+	    while(perm.hasNext()){
+	    	Integer[] nextOrder = perm.next();
+	    	int permTime = calculateTravelTimes(shufflePoints(points, nextOrder));
+	    	
+	    	if (travelTime == 0 || permTime < travelTime) {
+	    		travelTime = permTime;
+	    		bestOrder = Arrays.copyOf(nextOrder, nextOrder.length);
+	    	}
+	        count++;
+	    }
+	    System.out.println("total: " + count);
+	    System.out.println("Best time: " + travelTime);
+	    System.out.println("Best combination: " + Arrays.toString(bestOrder));
+	    
+	    return RoutingConnector.getRoute(shufflePoints(points, bestOrder));
+	}
+	
+	public GeoPoint[] shufflePoints(GeoPoint[] points, Integer[] order) {
+		
+		GeoPoint[] shuffledPoints = new GeoPoint[points.length];
+		
+		for (int i = 0; i < order.length; i++)
+			shuffledPoints[i] = points[order[i]];
+		
+		return shuffledPoints;
+	}
+	
+	public int calculateTravelTimes(GeoPoint[] points) throws Exception {
+		
+		int travelTimeSum = 0;
+		for(int index = 0; index < points.length - 1; index++) {
+			travelTimeSum += MeasureConverter.getTimeInMinutes(
+					RoutingConnector.getTravelTime(points[index],points[index + 1]));
+		}
+		return travelTimeSum;
 	}
 	
 }
