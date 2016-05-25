@@ -9,6 +9,8 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.json.JSONArray;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Lists;
@@ -28,16 +30,17 @@ import utility.MeasureConverter;
 @Component
 public class AppointmentPlanner {
 	
+	private final Logger log;
 	private TourOptimizer optimizer;
 
 	public AppointmentPlanner() {
+	    log = LoggerFactory.getLogger(this.getClass());
 		optimizer = new TourOptimizer();
 	}
 	
 	public List<PlanningResponse> startPlanning(Integer year, Integer month, Integer day, 
 			Integer durationOfAppointmentInMin, Double appointmentLat, Double appointmentLon) {
 		
-		JSONArray obj = new JSONArray();
 		SimpleDateFormat dateFormat = new SimpleDateFormat("EEEEEEEE", Locale.ENGLISH);
 		String appointmentWeekDay = dateFormat.
 				format(new GregorianCalendar(year, month-1, day).getTime()).toLowerCase();
@@ -118,16 +121,15 @@ public class AppointmentPlanner {
 						optimizer.setCalendarId(calendarID);
 						timeslots = optimizer.getPossibleTimeslotForNewAppointment(appointmentLocation, durationOfAppointmentInMin);
 					}
+
+					// add found time slots to planningList
+					if (timeslots != null && !timeslots.isEmpty())
+						planningList.addAll(timeslots);
 				}
-					
-				// add found time slots to planningList
-				planningList.addAll(timeslots);				
 			}
 		}
 		catch (Exception e) {
-			Map<String, String> message = Maps.newHashMap();
-			message.put("Error", "No appointment planning possible!");
-			obj.put(0, message);
+			log.error("Error", "No appointment planning possible!");
 		}
 		
 		// check the result from tour optimization
