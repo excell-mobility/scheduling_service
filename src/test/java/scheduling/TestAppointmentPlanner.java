@@ -24,7 +24,7 @@ public class TestAppointmentPlanner {
 	public void testAppointmentPlanningNotPossible() {
 		
 		List<PlanningResponse> startPlanning = planner.startPlanning(2016, 02, 24, 1000, 51.030306, 13.730407);
-		//assertTrue(startPlanning.get(0).toString().contains("Error"));
+		System.out.println(startPlanning);
 		assertTrue(startPlanning.isEmpty());
 	}
 	
@@ -32,16 +32,16 @@ public class TestAppointmentPlanner {
 	public void testAppointmentPlanningBeginning() {
 
 		List<PlanningResponse> startPlanning = planner.startPlanning(2016, 02, 24, 50, 51.030306, 13.730407);
-		//assertFalse(startPlanning.get(0).toString().contains("Error"));
+		assertFalse(startPlanning.get(0).toString().contains("Error"));
 		assertFalse(startPlanning.isEmpty());
 	}
 	
-	/*@Test
+	@Test
 	public void testAppointmentPlanningEnd() {
 		
 		List<PlanningResponse> startPlanning = planner.startPlanning(2016, 02, 24, 58, 51.030306, 13.730407);
 		assertFalse(startPlanning.get(0).toString().contains("Error"));
 		
-	}*/
+	}
 
 }

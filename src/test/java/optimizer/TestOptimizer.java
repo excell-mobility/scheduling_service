@@ -20,7 +20,7 @@ import scheduling.model.PlanningResponse;
 public class TestOptimizer {
 	
 	List<CalendarAppointment> appointments;
-	/*
+	
 	@Before
 	public void createDatastructures() {
 		
@@ -82,6 +82,7 @@ public class TestOptimizer {
 				possibleTimeslotForNewAppointment.get(0).getTimeslot().getStartDate());
 		assertEquals(new GregorianCalendar(2015, 11, 10, 16, 53).getTime(), 
 				possibleTimeslotForNewAppointment.get(0).getTimeslot().getEndDate());
+		assertTrue(possibleTimeslotForNewAppointment.get(0).getTravelDistance() > 0.0);
 		
 	}
 	
@@ -110,8 +111,9 @@ public class TestOptimizer {
 		optimizer.setAppointments(appointments);
 		assertTrue(optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30).isEmpty());
 		
-	}*/
+	}
 	
+	/*
 	@Test
 	public void getBestRoute() throws Exception {
 		
@@ -128,7 +130,7 @@ public class TestOptimizer {
 				new GeoPoint(51.0304768, 13.7683087)
 		});
 		
-		/*List<Double[]> optimalRoute = optimizer.getOptimalRoute(new GeoPoint[] {
+		List<Double[]> optimalRoute = optimizer.getOptimalRoute(new GeoPoint[] {
 				new GeoPoint(51.057478, 13.7687908),
 				new GeoPoint(51.0309365, 13.7837262),
 				new GeoPoint(51.0300575, 13.7938012),
@@ -186,7 +188,7 @@ public class TestOptimizer {
 				new GeoPoint(51.0254617, 13.8031619),
 				new GeoPoint(51.0234259, 13.8014061),
 				new GeoPoint(51.0227336, 13.7431401)
-		});*/
-	}
+		});
+	}*/
 
 }

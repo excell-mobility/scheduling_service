@@ -122,6 +122,7 @@ public class TourOptimizer {
 		
 		// return a valid starting date for the new appointment	
 		TreeMap<Integer,Integer> timeIndexMapping = Maps.newTreeMap();
+		HashMap<Integer,Double> saveDistanceForTravelTime = Maps.newHashMap();
 		HashMap<Integer,Integer> saveTravelTimesBefore = Maps.newHashMap();
 		HashMap<Integer,Integer> saveTravelTimesAfter = Maps.newHashMap();
 
@@ -193,10 +194,30 @@ public class TourOptimizer {
 				// calculate travel time of the whole route
 				List<CalendarAppointment> newAppointments = Lists.newArrayList(tempAppointments);
 				newAppointments.add(index + 1, new CalendarAppointment(appointmentLocation, null, null, null));
-				timeIndexMapping.put(calculateTravelTimes(newAppointments), index);
-				// save travel times for calculation
-				saveTravelTimesBefore.put(index, travelTimeInMinutesBefore);
-				saveTravelTimesAfter.put(index, travelTimeInMinutesAfter);
+				
+				double calculateDistance = calculateDistance(newAppointments);
+				int calculateTravelTimes = calculateTravelTimes(newAppointments);
+				// check, if time is the same and eventually override the tree map
+				if(!timeIndexMapping.containsKey(calculateTravelTimes)) {
+					timeIndexMapping.put(calculateTravelTimes, index);
+					// save travel times for calculation
+					saveTravelTimesBefore.put(index, travelTimeInMinutesBefore);
+					saveTravelTimesAfter.put(index, travelTimeInMinutesAfter);
+					// save distance and travel time
+					saveDistanceForTravelTime.put(calculateTravelTimes, calculateDistance);
+				} else {
+					// check, if we have to override the old value
+					if(saveDistanceForTravelTime.get(calculateTravelTimes) > calculateDistance) {
+						// update data structure and prioritize shorter route
+						timeIndexMapping.put(calculateTravelTimes, index);
+						// save travel times for calculation
+						saveTravelTimesBefore.put(index, travelTimeInMinutesBefore);
+						saveTravelTimesAfter.put(index, travelTimeInMinutesAfter);
+						// save distance and travel time
+						saveDistanceForTravelTime.put(calculateTravelTimes, calculateDistance);
+					}
+				}
+
 			}
 		}
 		
@@ -212,7 +233,7 @@ public class TourOptimizer {
 			for(int index: descendingKeySet) {
 				int valueIndex = timeIndexMapping.get(index);
 				timeslots.add(
-						new PlanningResponse(index, new Timeslot(
+						new PlanningResponse(index, saveDistanceForTravelTime.get(index), new Timeslot(
 								DateAnalyser.getEarliestPossibleStartingDate(
 										tempAppointments.get(valueIndex).getEndDate(), 
 										saveTravelTimesBefore.get(valueIndex).intValue(), false
@@ -231,6 +252,16 @@ public class TourOptimizer {
 		
 	}
 	
+	private double calculateDistance(List<CalendarAppointment> newAppointments) throws Exception {
+		
+		double travelDistanceSum = 0.0;
+		for(int index = 0; index < newAppointments.size() - 2; index++) {
+			travelDistanceSum += RoutingConnector.getTravelDistance(newAppointments.get(index).getPosition(), 
+							newAppointments.get(index + 1).getPosition());
+		}
+		return travelDistanceSum;
+	}
+
 	public int calculateTravelTimes(List<CalendarAppointment> newAppointments) throws Exception {
 		
 		int travelTimeSum = 0;
