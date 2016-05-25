@@ -118,7 +118,7 @@ public class AppointmentPlanner {
 						optimizer.setCalendarId(calendarID);
 						timeslots = optimizer.getPossibleTimeslotForNewAppointment(appointmentLocation, durationOfAppointmentInMin);
 					}
-				}			
+				}
 					
 				// add found time slots to planningList
 				planningList.addAll(timeslots);				

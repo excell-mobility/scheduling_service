@@ -1,12 +1,17 @@
 package scheduling;
 
+//import java.util.List;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.ResponseEntity;
 
+import beans.GeoPoint;
+import rest.RoutingConnector;
 import scheduling.component.AppointmentPlanner;
+import scheduling.component.TourOptimizer;
 import scheduling.controller.PlanningController;
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.spi.DocumentationType;
@@ -21,8 +26,53 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 	})
 public class Application {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) /*throws Exception*/ {
         SpringApplication.run(Application.class, args);
+        
+        /*TourOptimizer optimizer = new TourOptimizer();
+//        RoutingConnector router = new RoutingConnector();
+        
+        GeoPoint[] pointArr;
+        pointArr = new GeoPoint[] {
+        		new GeoPoint(51.0405489,13.6575849502255),
+				new GeoPoint(50.8533642,11.893690966753),
+				new GeoPoint(50.56468,10.25533),
+				new GeoPoint(50.8679921,10.825524),
+				new GeoPoint(50.9171709,11.025134),
+				new GeoPoint(48.8098985,12.9908809),
+				new GeoPoint(50.8767416,11.7023218),
+				new GeoPoint(50.6949499,12.0599328),
+				new GeoPoint(50.9375682,12.2615406),
+				new GeoPoint(51.0405489,13.6575849502255)
+        };
+        
+//        List<Double[]> route = router.getRoute(pointArr);
+        
+        List<Double[]> bestRoute = optimizer.getOptimalRoute(pointArr);
+        
+        System.out.println("Travel time original: " + 
+        						optimizer.calculateTravelTimes(
+        								optimizer.shufflePoints(pointArr,new Integer[]{0,1,2,3,4,5,6,7})
+        								));
+        
+        System.out.println("Travel time opt.: " + 
+				optimizer.calculateTravelTimes(
+						optimizer.shufflePoints(pointArr,new Integer[]{7,3,0,1,2,4,5,6})
+						));
+        
+        System.out.println("Travel distance original: " + 
+				optimizer.calculateTravelDistances(
+						optimizer.shufflePoints(pointArr,new Integer[]{0,1,2,3,4,5,6,7})
+						));
+
+		System.out.println("Travel distance opt.: " + 
+		optimizer.calculateTravelDistances(
+				optimizer.shufflePoints(pointArr,new Integer[]{7,3,0,1,2,4,5,6})
+				));*/
+        
+//        total: 40320
+//        Best time: 93
+//        Best combination: [7, 3, 0, 1, 2, 4, 5, 6]
     }
 
     @Bean

@@ -230,7 +230,7 @@ public class TourOptimizer {
 		return Lists.newLinkedList();
 		
 	}
-
+	
 	public int calculateTravelTimes(List<CalendarAppointment> newAppointments) throws Exception {
 		
 		int travelTimeSum = 0;
@@ -272,11 +272,23 @@ public class TourOptimizer {
 	}
 	
 	public GeoPoint[] shufflePoints(GeoPoint[] points, Integer[] order) {
-		
+		/*
 		GeoPoint[] shuffledPoints = new GeoPoint[points.length];
 		
 		for (int i = 0; i < order.length; i++)
 			shuffledPoints[i] = points[order[i]];
+		
+		return shuffledPoints;
+		*/
+		
+		GeoPoint[] shuffledPoints = new GeoPoint[points.length+2];
+		
+		shuffledPoints[0] = new GeoPoint(51.0405489,13.6575849502255);
+		
+		for (int i = 0; i < order.length; i++)
+			shuffledPoints[i+1] = points[order[i]];
+		
+		shuffledPoints[points.length+1] = new GeoPoint(51.0405489,13.6575849502255);
 		
 		return shuffledPoints;
 	}
@@ -289,6 +301,15 @@ public class TourOptimizer {
 					RoutingConnector.getTravelTime(points[index],points[index + 1]));
 		}
 		return travelTimeSum;
+	}
+	
+	public double calculateTravelDistances(GeoPoint[] points) throws Exception {
+		
+		int travelDistanceSum = 0;
+		for(int index = 0; index < points.length - 1; index++) {
+			travelDistanceSum += RoutingConnector.getTravelDistance(points[index],points[index + 1]);
+		}
+		return travelDistanceSum;
 	}
 	
 }
