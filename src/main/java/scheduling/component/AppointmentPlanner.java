@@ -94,6 +94,9 @@ public class AppointmentPlanner {
 						int travelTimeInMinutes = MeasureConverter.getTimeInMinutes(
 								RoutingConnector.getTravelTime(startPosition, appointmentLocation));
 					
+						double travelDistance = 
+								RoutingConnector.getTravelDistance(startPosition, appointmentLocation);
+								
 						// get start time for first appointment incl. travel time
 						Date beginFirstAppointment = DateAnalyser.getEarliestPossibleStartingDate(
 								beginningDate, travelTimeInMinutes, false);
@@ -107,6 +110,7 @@ public class AppointmentPlanner {
 						if (endFirstAppointment.before(endDate))
 							timeslots.add(new PlanningResponse(
 									travelTimeInMinutes * 2,
+									travelDistance * 2,
 									new Timeslot(beginFirstAppointment, endFirstAppointment),
 									calendarID
 									));

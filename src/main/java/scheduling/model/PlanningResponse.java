@@ -5,6 +5,7 @@ import beans.Timeslot;
 public class PlanningResponse {
 
 	private int travelTime;
+	private double travelDistance;
 	private Timeslot timeslot;
 	private String calendarId;
 	
@@ -13,8 +14,9 @@ public class PlanningResponse {
 		
 	}
 	
-	public PlanningResponse(int travelTime, Timeslot timeslot, String calendarId) {
+	public PlanningResponse(int travelTime, double travelDistance, Timeslot timeslot, String calendarId) {
 		this.setTravelTime(travelTime);
+		this.setTravelDistance(travelDistance);
 		this.setTimeslot(timeslot);
 		this.setCalendarId(calendarId);
 	}
@@ -25,6 +27,14 @@ public class PlanningResponse {
 
 	public void setTravelTime(int travelTime) {
 		this.travelTime = travelTime;
+	}
+	
+	public double getTravelDistance() {
+		return travelDistance;
+	}
+
+	public void setTravelDistance(double travelDistance) {
+		this.travelDistance = travelDistance;
 	}
 	
 	public Timeslot getTimeslot() {
