@@ -3,6 +3,7 @@ package scheduling.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -16,6 +17,7 @@ import io.swagger.annotations.ApiParam;
 import scheduling.component.AppointmentPlanner;
 import scheduling.model.PlanningResponse;
 
+@CrossOrigin(origins = "*")
 @RestController
 @Api(value="/v1/scheduling")
 public class PlanningController {
