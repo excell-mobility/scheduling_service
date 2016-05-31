@@ -8,10 +8,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.ResponseEntity;
 
-import beans.GeoPoint;
-import rest.RoutingConnector;
+//import beans.GeoPoint;
+//import rest.RoutingConnector;
 import scheduling.component.AppointmentPlanner;
-import scheduling.component.TourOptimizer;
+//import scheduling.component.TourOptimizer;
 import scheduling.controller.PlanningController;
 import springfox.documentation.service.ApiInfo;
 import springfox.documentation.spi.DocumentationType;
@@ -29,8 +29,9 @@ public class Application {
     public static void main(String[] args) /*throws Exception*/ {
         SpringApplication.run(Application.class, args);
         
-        /*TourOptimizer optimizer = new TourOptimizer();
-//        RoutingConnector router = new RoutingConnector();
+        /*
+ 		RoutingConnector router = new RoutingConnector();
+        TourOptimizer optimizer = new TourOptimizer(router);
         
         GeoPoint[] pointArr;
         pointArr = new GeoPoint[] {

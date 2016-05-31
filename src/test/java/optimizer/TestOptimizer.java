@@ -14,6 +14,7 @@ import com.google.common.collect.Lists;
 
 import beans.CalendarAppointment;
 import beans.GeoPoint;
+import rest.RoutingConnector;
 import scheduling.component.TourOptimizer;
 import scheduling.model.PlanningResponse;
 
@@ -38,7 +39,8 @@ public class TestOptimizer {
 	@Test 
 	public void testCheckOnlyTwoAppointments() throws Exception {
 		
-		TourOptimizer optimizer = new TourOptimizer();
+		RoutingConnector router = new RoutingConnector();
+		TourOptimizer optimizer = new TourOptimizer(router);
 		
 		optimizer.setAppointments(appointments);
 		appointments.remove(0);
@@ -58,7 +60,8 @@ public class TestOptimizer {
 	@Test
 	public void testCheckTimeslotForNewAppointment() {
 		
-		TourOptimizer optimizer = new TourOptimizer();
+		RoutingConnector router = new RoutingConnector();
+		TourOptimizer optimizer = new TourOptimizer(router);
 		
 		optimizer.setAppointments(appointments);
 		CalendarAppointment appointment = new CalendarAppointment(
@@ -75,7 +78,8 @@ public class TestOptimizer {
 	@Test
 	public void testAppointmentOptimization() throws Exception {
 		
-		TourOptimizer optimizer = new TourOptimizer();
+		RoutingConnector router = new RoutingConnector();
+		TourOptimizer optimizer = new TourOptimizer(router);
 		optimizer.setAppointments(appointments);
 		List<PlanningResponse> possibleTimeslotForNewAppointment = optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30);
 		assertEquals(new GregorianCalendar(2015, 11, 10, 15, 05).getTime(), 
@@ -96,7 +100,9 @@ public class TestOptimizer {
 				new GregorianCalendar(2015, 11, 10, 10, 00).getTime(), new GregorianCalendar(2015, 11, 10, 12, 00).getTime(), "2"));
 		appointments.add(new CalendarAppointment(new GeoPoint(51.052599, 13.752138),
 				new GregorianCalendar(2015, 11, 10, 12, 30).getTime(), new GregorianCalendar(2015, 11, 10, 15, 00).getTime(), "3"));
-		TourOptimizer optimizer = new TourOptimizer();
+		
+		RoutingConnector router = new RoutingConnector();
+		TourOptimizer optimizer = new TourOptimizer(router);
 		optimizer.setAppointments(appointments);
 		assertTrue(optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30).isEmpty());
 		
@@ -107,7 +113,7 @@ public class TestOptimizer {
 				new GregorianCalendar(2015, 11, 10, 10, 00).getTime(), new GregorianCalendar(2015, 11, 10, 12, 00).getTime(), "2"));
 		appointments.add(new CalendarAppointment(new GeoPoint(51.052599, 13.752138),
 				new GregorianCalendar(2015, 11, 10, 12, 40).getTime(), new GregorianCalendar(2015, 11, 10, 15, 00).getTime(), "3"));
-		optimizer = new TourOptimizer();
+		
 		optimizer.setAppointments(appointments);
 		assertTrue(optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30).isEmpty());
 		
@@ -117,7 +123,8 @@ public class TestOptimizer {
 	@Test
 	public void getBestRoute() throws Exception {
 		
-		TourOptimizer optimizer = new TourOptimizer();
+		RoutingConnector router = new RoutingConnector();
+		TourOptimizer optimizer = new TourOptimizer(router);
 		
 		optimizer.getOptimalRoute(new GeoPoint[] {
 				new GeoPoint(51.0199692, 13.7694339),

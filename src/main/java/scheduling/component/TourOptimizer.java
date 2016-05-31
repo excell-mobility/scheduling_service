@@ -21,6 +21,8 @@ import utility.MeasureConverter;
 
 public class TourOptimizer {
 	
+	private final RoutingConnector routingConnector;
+	
 	private List<CalendarAppointment> appointments = new ArrayList<CalendarAppointment>();
 	private Date beginWork;
 	private Date endWork;
@@ -28,9 +30,9 @@ public class TourOptimizer {
 	private GeoPoint endLocation;
 	private String calendarId;
 	
-	//dummy constructor
-	public TourOptimizer() {
-		
+	// dummy constructor
+	public TourOptimizer(RoutingConnector routingConnector) {
+		this.routingConnector = routingConnector;		
 	}
 	
 	public TourOptimizer (List<CalendarAppointment> appointments, 
@@ -39,6 +41,7 @@ public class TourOptimizer {
 			GeoPoint beginLocation,
 			GeoPoint endLocation,
 			String calendarId) {
+		this.routingConnector = new RoutingConnector();	
 		this.appointments = appointments;
 		this.beginWork = beginWork;
 		this.endWork = endWork;
@@ -185,9 +188,9 @@ public class TourOptimizer {
 			}
 			
 			int travelTimeInMinutesBefore = MeasureConverter.getTimeInMinutes(
-					RoutingConnector.getTravelTime(startAppointment.getPosition(), appointmentLocation));
+					routingConnector.getTravelTime(startAppointment.getPosition(), appointmentLocation));
 			int travelTimeInMinutesAfter = MeasureConverter.getTimeInMinutes(
-					RoutingConnector.getTravelTime(appointmentLocation, endAppointment.getPosition()));
+					routingConnector.getTravelTime(appointmentLocation, endAppointment.getPosition()));
 			
 			if((durationOfAppointmentInMin + travelTimeInMinutesBefore + travelTimeInMinutesAfter) 
 					< durationBetweenTwoAppointments) {
@@ -256,7 +259,7 @@ public class TourOptimizer {
 		
 		double travelDistanceSum = 0.0;
 		for(int index = 0; index < newAppointments.size() - 2; index++) {
-			travelDistanceSum += RoutingConnector.getTravelDistance(newAppointments.get(index).getPosition(), 
+			travelDistanceSum += routingConnector.getTravelDistance(newAppointments.get(index).getPosition(), 
 							newAppointments.get(index + 1).getPosition());
 		}
 		return travelDistanceSum;
@@ -267,7 +270,7 @@ public class TourOptimizer {
 		int travelTimeSum = 0;
 		for(int index = 0; index < newAppointments.size() - 2; index++) {
 			travelTimeSum += MeasureConverter.getTimeInMinutes(
-					RoutingConnector.getTravelTime(newAppointments.get(index).getPosition(), 
+					routingConnector.getTravelTime(newAppointments.get(index).getPosition(), 
 							newAppointments.get(index + 1).getPosition()));
 		}
 		return travelTimeSum;
@@ -299,7 +302,7 @@ public class TourOptimizer {
 	    System.out.println("Best time: " + travelTime);
 	    System.out.println("Best combination: " + Arrays.toString(bestOrder));
 	    
-	    return RoutingConnector.getRoute(shufflePoints(points, bestOrder));
+	    return routingConnector.getRoute(shufflePoints(points, bestOrder));
 	}
 	
 	public GeoPoint[] shufflePoints(GeoPoint[] points, Integer[] order) {
@@ -329,7 +332,7 @@ public class TourOptimizer {
 		int travelTimeSum = 0;
 		for(int index = 0; index < points.length - 1; index++) {
 			travelTimeSum += MeasureConverter.getTimeInMinutes(
-					RoutingConnector.getTravelTime(points[index],points[index + 1]));
+					routingConnector.getTravelTime(points[index],points[index + 1]));
 		}
 		return travelTimeSum;
 	}
@@ -338,7 +341,7 @@ public class TourOptimizer {
 		
 		int travelDistanceSum = 0;
 		for(int index = 0; index < points.length - 1; index++) {
-			travelDistanceSum += RoutingConnector.getTravelDistance(points[index],points[index + 1]);
+			travelDistanceSum += routingConnector.getTravelDistance(points[index],points[index + 1]);
 		}
 		return travelDistanceSum;
 	}

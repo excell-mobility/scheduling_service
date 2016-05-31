@@ -34,11 +34,15 @@ import utility.MeasureConverter;
 public class AppointmentPlanner {
 	
 	private final Logger log;
-	private TourOptimizer optimizer;
+	private final CalendarConnector calendarConnector;
+	private final RoutingConnector routingConnector;
+	private final TourOptimizer optimizer;
 
 	public AppointmentPlanner() {
-	    log = LoggerFactory.getLogger(this.getClass());
-		optimizer = new TourOptimizer();
+	    this.log = LoggerFactory.getLogger(this.getClass());
+		this.calendarConnector = new CalendarConnector();
+		this.routingConnector = new RoutingConnector();
+		optimizer = new TourOptimizer(routingConnector);
 	}
 	
 	public List<PlanningResponse> startPlanning(Integer year, Integer month, Integer day, 
@@ -51,7 +55,7 @@ public class AppointmentPlanner {
 		List<PlanningResponse> planningList = Lists.newLinkedList();
 		
 		try {
-			JSONArray calendarUsers = CalendarConnector.getCalendarUsers();
+			JSONArray calendarUsers = calendarConnector.getCalendarUsers();
 			AppointmentExtraction extraction = new AppointmentExtraction();
 			List<String> extractCalendarUsers = extraction.extractCalendarUsers(calendarUsers);
 			
@@ -67,7 +71,7 @@ public class AppointmentPlanner {
 				// if there is not enough time between the appointments
 				Map<String, WorkingDay> workingDays = Maps.newHashMap();
 				org.json.JSONObject workingHoursForCalendar = 
-						CalendarConnector.getWorkingHoursForCalendar(calendarID);
+						calendarConnector.getWorkingHoursForCalendar(calendarID);
 				workingDays = appointmentExtraction.extractWorkingHours(workingHoursForCalendar);
 				
 				WorkingDay workingDay = workingDays.get(appointmentWeekDay);
@@ -98,17 +102,17 @@ public class AppointmentPlanner {
 							.append("\"end\": \"").append(endTime.format(DateTimeFormatter.ISO_INSTANT)).append("\"}");
 					
 					// get appointments already set in calendar service
-					JSONArray appointmentsForCalendar = CalendarConnector.getAppointmentsForCalendar(calendarID, timeFilter.toString());
+					JSONArray appointmentsForCalendar = calendarConnector.getAppointmentsForCalendar(calendarID, timeFilter.toString());
 					List<CalendarAppointment> appointments = appointmentExtraction.extractAppointments(appointmentsForCalendar);
 				
 					// no appointments found, choose earliest date possible from working hours
 					if (appointments == null || appointments.isEmpty()) {	
 						// calculate travel distance for starting position of user to appointment
 						int travelTimeInMinutes = MeasureConverter.getTimeInMinutes(
-								RoutingConnector.getTravelTime(startPosition, appointmentLocation));
+								routingConnector.getTravelTime(startPosition, appointmentLocation));
 					
 						double travelDistance = 
-								RoutingConnector.getTravelDistance(startPosition, appointmentLocation);
+								routingConnector.getTravelDistance(startPosition, appointmentLocation);
 								
 						// get start time for first appointment incl. travel time
 						Date beginFirstAppointment = DateAnalyser.getEarliestPossibleStartingDate(
