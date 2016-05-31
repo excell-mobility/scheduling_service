@@ -1,6 +1,9 @@
 package scheduling.component;
 
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -84,8 +87,18 @@ public class AppointmentPlanner {
 					Date endDate = new GregorianCalendar(year, month-1, day, 
 							workingDay.getEndWorkingHour(), workingDay.getEndWorkingMinute()).getTime();
 					
+					ZonedDateTime beginTime = beginningDate.toInstant().atZone(ZoneId.systemDefault());
+					ZonedDateTime endTime = beginningDate.toInstant().atZone(ZoneId.systemDefault());
+					
+					beginTime.format(DateTimeFormatter.ISO_INSTANT);
+					
+					// construct time filter
+					StringBuilder timeFilter = new StringBuilder("")
+							.append("{\"begin\": \"").append(beginTime.format(DateTimeFormatter.ISO_INSTANT)).append("\",")
+							.append("\"end\": \"").append(endTime.format(DateTimeFormatter.ISO_INSTANT)).append("\"}");
+					
 					// get appointments already set in calendar service
-					JSONArray appointmentsForCalendar = CalendarConnector.getAppointmentsForCalendar(calendarID, "{}");
+					JSONArray appointmentsForCalendar = CalendarConnector.getAppointmentsForCalendar(calendarID, timeFilter.toString());
 					List<CalendarAppointment> appointments = appointmentExtraction.extractAppointments(appointmentsForCalendar);
 				
 					// no appointments found, choose earliest date possible from working hours
