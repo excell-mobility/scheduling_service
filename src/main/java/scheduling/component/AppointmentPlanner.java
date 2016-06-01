@@ -85,14 +85,18 @@ public class AppointmentPlanner {
 					// create appointment location
 					GeoPoint appointmentLocation = new GeoPoint(appointmentLat, appointmentLon);
 					
-					// get start and end of workingHours
+					// get start and end of workingHours and breakHours
 					Date beginningDate = new GregorianCalendar(year, month-1, day, 
 							workingDay.getStartWorkingHour(), workingDay.getStartWorkingMinute()).getTime();
 					Date endDate = new GregorianCalendar(year, month-1, day, 
 							workingDay.getEndWorkingHour(), workingDay.getEndWorkingMinute()).getTime();
+					Date beginningBreak = new GregorianCalendar(year, month-1, day, 
+							workingDay.getStartBreakHour(), workingDay.getStartBreakMinute()).getTime();
+					Date endBreak = new GregorianCalendar(year, month-1, day, 
+							workingDay.getEndBreakHour(), workingDay.getEndBreakMinute()).getTime();
 					
 					ZonedDateTime beginTime = beginningDate.toInstant().atZone(ZoneId.systemDefault());
-					ZonedDateTime endTime = beginningDate.toInstant().atZone(ZoneId.systemDefault());
+					ZonedDateTime endTime = endDate.toInstant().atZone(ZoneId.systemDefault());
 					
 					beginTime.format(DateTimeFormatter.ISO_INSTANT);
 					
@@ -137,6 +141,8 @@ public class AppointmentPlanner {
 						optimizer.setAppointments(appointments);
 						optimizer.setBeginWork(beginningDate);
 						optimizer.setEndWork(endDate);
+						optimizer.setBeginBreak(beginningBreak);
+						optimizer.setEndBreak(endBreak);
 						optimizer.setBeginLocation(startPosition);
 						optimizer.setEndLocation(endPosition);
 						optimizer.setCalendarId(calendarID);

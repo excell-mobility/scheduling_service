@@ -14,6 +14,7 @@ import com.google.common.collect.Maps;
 import beans.CalendarAppointment;
 import beans.GeoPoint;
 import beans.Timeslot;
+import exceptions.RoutingNotFoundException;
 import rest.RoutingConnector;
 import scheduling.model.PlanningResponse;
 import utility.DateAnalyser;
@@ -26,6 +27,8 @@ public class TourOptimizer {
 	private List<CalendarAppointment> appointments = new ArrayList<CalendarAppointment>();
 	private Date beginWork;
 	private Date endWork;
+	private Date beginBreak;
+	private Date endBreak;
 	private GeoPoint beginLocation;
 	private GeoPoint endLocation;
 	private String calendarId;
@@ -38,6 +41,8 @@ public class TourOptimizer {
 	public TourOptimizer (List<CalendarAppointment> appointments, 
 			Date beginWork,
 			Date endWork,
+			Date beginBreak,
+			Date endBreak,
 			GeoPoint beginLocation,
 			GeoPoint endLocation,
 			String calendarId) {
@@ -45,6 +50,8 @@ public class TourOptimizer {
 		this.appointments = appointments;
 		this.beginWork = beginWork;
 		this.endWork = endWork;
+		this.beginBreak = beginBreak;
+		this.endBreak = endBreak;
 		this.beginLocation = beginLocation;
 		this.endLocation = endLocation;
 		this.calendarId = calendarId;
@@ -57,7 +64,7 @@ public class TourOptimizer {
 	public void setAppointments(List<CalendarAppointment> appointments) {
 		this.appointments = appointments;
 	}
-	
+
 	public Date getBeginWork() {
 		return beginWork;
 	}
@@ -72,6 +79,22 @@ public class TourOptimizer {
 
 	public void setEndWork(Date endWork) {
 		this.endWork = endWork;
+	}
+	
+	public Date getBeginBreak() {
+		return beginBreak;
+	}
+
+	public void setBeginBreak(Date beginBreak) {
+		this.beginBreak = beginBreak;
+	}
+
+	public Date getEndBreak() {
+		return endBreak;
+	}
+
+	public void setEndBreak(Date endBreak) {
+		this.endBreak = endBreak;
 	}
 	
 	public GeoPoint getBeginLocation() {
@@ -139,6 +162,9 @@ public class TourOptimizer {
 		if (endLocation != null && endWork != null)
 			tempAppointments.add(new CalendarAppointment(endLocation, endWork, endWork, calendarId));
 		
+		// calculate duration of break
+		int durationBreak = DateAnalyser.getDurationBetweenDates(
+				beginBreak, endBreak);
 		/*
 		// check, if it is possible to put the new appointment at the beginning or end
 		Date latestEndDate = appointments.get(0).getStartDate();
@@ -186,41 +212,51 @@ public class TourOptimizer {
 			if(durationOfAppointmentInMin >= durationBetweenTwoAppointments) {
 				continue;
 			}
+						
+			try {
+				int travelTimeInMinutesBefore = MeasureConverter.getTimeInMinutes(
+						routingConnector.getTravelTime(startAppointment.getPosition(), appointmentLocation));
+				int travelTimeInMinutesAfter = MeasureConverter.getTimeInMinutes(
+						routingConnector.getTravelTime(appointmentLocation, endAppointment.getPosition()));
 			
-			int travelTimeInMinutesBefore = MeasureConverter.getTimeInMinutes(
-					routingConnector.getTravelTime(startAppointment.getPosition(), appointmentLocation));
-			int travelTimeInMinutesAfter = MeasureConverter.getTimeInMinutes(
-					routingConnector.getTravelTime(appointmentLocation, endAppointment.getPosition()));
-			
-			if((durationOfAppointmentInMin + travelTimeInMinutesBefore + travelTimeInMinutesAfter) 
-					< durationBetweenTwoAppointments) {
-				// calculate travel time of the whole route
-				List<CalendarAppointment> newAppointments = Lists.newArrayList(tempAppointments);
-				newAppointments.add(index + 1, new CalendarAppointment(appointmentLocation, null, null, null));
+				int additionalWorkTime = durationOfAppointmentInMin + travelTimeInMinutesBefore + travelTimeInMinutesAfter;
 				
-				double calculateDistance = calculateDistance(newAppointments);
-				int calculateTravelTimes = calculateTravelTimes(newAppointments);
-				// check, if time is the same and eventually override the tree map
-				if(!timeIndexMapping.containsKey(calculateTravelTimes)) {
-					timeIndexMapping.put(calculateTravelTimes, index);
-					// save travel times for calculation
-					saveTravelTimesBefore.put(index, travelTimeInMinutesBefore);
-					saveTravelTimesAfter.put(index, travelTimeInMinutesAfter);
-					// save distance and travel time
-					saveDistanceForTravelTime.put(calculateTravelTimes, calculateDistance);
-				} else {
-					// check, if we have to override the old value
-					if(saveDistanceForTravelTime.get(calculateTravelTimes) > calculateDistance) {
-						// update data structure and prioritize shorter route
+				// reduce durationBetweenTwoAppointments if the start time of the break
+				// lies after the first appointment but before the next appointment
+				if (startAppointment.getStartDate().before(beginBreak) &&
+						endAppointment.getStartDate().after(beginBreak))
+					durationBetweenTwoAppointments -= durationBreak;
+				
+				if(additionalWorkTime < durationBetweenTwoAppointments) {
+					// calculate travel time of the whole route
+					List<CalendarAppointment> newAppointments = Lists.newArrayList(tempAppointments);
+					newAppointments.add(index + 1, new CalendarAppointment(appointmentLocation, null, null, null));
+					
+					double calculateDistance = calculateDistance(newAppointments);
+					int calculateTravelTimes = calculateTravelTimes(newAppointments);
+					// check, if time is the same and eventually override the tree map
+					if(!timeIndexMapping.containsKey(calculateTravelTimes)) {
 						timeIndexMapping.put(calculateTravelTimes, index);
 						// save travel times for calculation
 						saveTravelTimesBefore.put(index, travelTimeInMinutesBefore);
 						saveTravelTimesAfter.put(index, travelTimeInMinutesAfter);
 						// save distance and travel time
 						saveDistanceForTravelTime.put(calculateTravelTimes, calculateDistance);
+					} else {
+						// check, if we have to override the old value
+						if(saveDistanceForTravelTime.get(calculateTravelTimes) > calculateDistance) {
+							// update data structure and prioritize shorter route
+							timeIndexMapping.put(calculateTravelTimes, index);
+							// save travel times for calculation
+							saveTravelTimesBefore.put(index, travelTimeInMinutesBefore);
+							saveTravelTimesAfter.put(index, travelTimeInMinutesAfter);
+							// save distance and travel time
+							saveDistanceForTravelTime.put(calculateTravelTimes, calculateDistance);
+						}
 					}
 				}
-
+			} catch (RoutingNotFoundException routEx) {
+				// TODO do something here
 			}
 		}
 		
