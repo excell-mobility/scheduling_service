@@ -81,6 +81,8 @@ public class TestOptimizer {
 		RoutingConnector router = new RoutingConnector();
 		TourOptimizer optimizer = new TourOptimizer(router);
 		optimizer.setAppointments(appointments);
+		optimizer.setBeginBreak(new GregorianCalendar(2015, 11, 10, 12, 05).getTime());
+		optimizer.setEndBreak(new GregorianCalendar(2015, 11, 10, 13, 05).getTime());
 		List<PlanningResponse> possibleTimeslotForNewAppointment = optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30);
 		assertEquals(new GregorianCalendar(2015, 11, 10, 15, 05).getTime(), 
 				possibleTimeslotForNewAppointment.get(0).getTimeslot().getStartDate());
