@@ -21,7 +21,7 @@ import com.google.common.collect.Maps;
 
 import beans.CalendarAppointment;
 import beans.GeoPoint;
-import beans.Timeslot;
+//import beans.Timeslot;
 import beans.WorkingDay;
 import extraction.AppointmentExtraction;
 import rest.CalendarConnector;
@@ -95,15 +95,20 @@ public class AppointmentPlanner {
 					Date endBreak = new GregorianCalendar(year, month-1, day, 
 							workingDay.getEndBreakHour(), workingDay.getEndBreakMinute()).getTime();
 					
-					ZonedDateTime beginTime = beginningDate.toInstant().atZone(ZoneId.systemDefault());
-					ZonedDateTime endTime = endDate.toInstant().atZone(ZoneId.systemDefault());
+					ZonedDateTime beginTime = beginningDate.toInstant().atZone(ZoneId.of("Europe/Berlin"));
+					ZonedDateTime endTime = endDate.toInstant().atZone(ZoneId.of("Europe/Berlin"));
 					
-					beginTime.format(DateTimeFormatter.ISO_INSTANT);
+					DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+//					LocalTime midnight = LocalTime.MIDNIGHT;
+//					LocalDate today = LocalDate.now(ZoneId.of("Europe/Berlin"));
+//					ZonedDateTime todayStart = ZonedDateTime.of(today, midnight, ZoneId.of("Europe/Berlin"));
+//					String todayMidnight = todayStart.format(formatter);
+//					String tomorrowMidnight = todayStart.plusDays(1).format(formatter);
 					
 					// construct time filter
 					StringBuilder timeFilter = new StringBuilder("")
-							.append("{\"begin\": \"").append(beginTime.format(DateTimeFormatter.ISO_INSTANT)).append("\",")
-							.append("\"end\": \"").append(endTime.format(DateTimeFormatter.ISO_INSTANT)).append("\"}");
+							.append("{\"begin\": \"").append(beginTime.format(formatter.withZone(ZoneId.of("Europe/Berlin")))).append("\",")
+							.append("\"end\": \"").append(endTime.format(formatter.withZone(ZoneId.of("Europe/Berlin")))).append("\"}");
 					
 					// get appointments already set in calendar service
 					JSONArray appointmentsForCalendar = calendarConnector.getAppointmentsForCalendar(calendarID, timeFilter.toString());
@@ -132,7 +137,9 @@ public class AppointmentPlanner {
 							timeslots.add(new PlanningResponse(
 									travelTimeInMinutes * 2,
 									travelDistance * 2,
-									new Timeslot(beginFirstAppointment, endFirstAppointment),
+									beginFirstAppointment, 
+									endFirstAppointment,
+									//new Timeslot(beginFirstAppointment, endFirstAppointment),
 									calendarID
 									));
 					}

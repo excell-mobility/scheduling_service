@@ -13,7 +13,7 @@ import com.google.common.collect.Maps;
 
 import beans.CalendarAppointment;
 import beans.GeoPoint;
-import beans.Timeslot;
+//import beans.Timeslot;
 import exceptions.RoutingNotFoundException;
 import rest.RoutingConnector;
 import scheduling.model.PlanningResponse;
@@ -272,7 +272,7 @@ public class TourOptimizer {
 			for(int index: descendingKeySet) {
 				int valueIndex = timeIndexMapping.get(index);
 				timeslots.add(
-						new PlanningResponse(index, saveDistanceForTravelTime.get(index), new Timeslot(
+						new PlanningResponse(index, saveDistanceForTravelTime.get(index), //new Timeslot(
 								DateAnalyser.getEarliestPossibleStartingDate(
 										tempAppointments.get(valueIndex).getEndDate(), 
 										saveTravelTimesBefore.get(valueIndex).intValue(), false
@@ -281,7 +281,8 @@ public class TourOptimizer {
 										tempAppointments.get(valueIndex + 1).getStartDate(), 
 										saveTravelTimesAfter.get(valueIndex).intValue(), false
 										)
-								),calendarId
+								//)
+								,calendarId
 								));
 			}
 			return timeslots;
