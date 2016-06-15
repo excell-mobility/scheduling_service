@@ -48,9 +48,9 @@ public class TestOptimizer {
 		List<PlanningResponse> possibleTimeslotForNewAppointment = 
 				optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 60);
 		assertEquals(new GregorianCalendar(2015, 11, 10, 15, 05).getTime(), 
-				possibleTimeslotForNewAppointment.get(0).getTimeslot().getStartDate());
+				possibleTimeslotForNewAppointment.get(0).getStartDate());
 		assertEquals(new GregorianCalendar(2015, 11, 10, 16, 53).getTime(), 
-				possibleTimeslotForNewAppointment.get(0).getTimeslot().getEndDate());
+				possibleTimeslotForNewAppointment.get(0).getEndDate());
 		possibleTimeslotForNewAppointment = 
 				optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 109);
 		assertTrue(possibleTimeslotForNewAppointment.isEmpty());
@@ -85,9 +85,9 @@ public class TestOptimizer {
 		optimizer.setEndBreak(new GregorianCalendar(2015, 11, 10, 13, 05).getTime());
 		List<PlanningResponse> possibleTimeslotForNewAppointment = optimizer.getPossibleTimeslotForNewAppointment(new GeoPoint(51.030306, 13.730407), 30);
 		assertEquals(new GregorianCalendar(2015, 11, 10, 15, 05).getTime(), 
-				possibleTimeslotForNewAppointment.get(0).getTimeslot().getStartDate());
+				possibleTimeslotForNewAppointment.get(0).getStartDate());
 		assertEquals(new GregorianCalendar(2015, 11, 10, 16, 53).getTime(), 
-				possibleTimeslotForNewAppointment.get(0).getTimeslot().getEndDate());
+				possibleTimeslotForNewAppointment.get(0).getEndDate());
 		assertTrue(possibleTimeslotForNewAppointment.get(0).getTravelDistance() > 0.0);
 		
 	}

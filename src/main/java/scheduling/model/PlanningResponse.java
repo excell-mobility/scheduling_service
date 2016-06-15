@@ -1,12 +1,18 @@
 package scheduling.model;
 
-import beans.Timeslot;
+import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+//import beans.Timeslot;
 
 public class PlanningResponse {
 
 	private int travelTime;
 	private double travelDistance;
-	private Timeslot timeslot;
+	private Date startDate;
+	private Date endDate;
+//	private Timeslot timeslot;
 	private String calendarId;
 	
 	// dummy constructor
@@ -14,17 +20,24 @@ public class PlanningResponse {
 		
 	}
 	
-	public PlanningResponse(int travelTime, double travelDistance, Timeslot timeslot, String calendarId) {
+	public PlanningResponse(int travelTime, 
+			double travelDistance, 
+			Date startDate, 
+			Date endDate,
+			//Timeslot timeslot, 
+			String calendarId) {
 		this.setTravelTime(travelTime);
 		this.setTravelDistance(travelDistance);
-		this.setTimeslot(timeslot);
+		this.startDate = startDate;
+		this.endDate = endDate;
+//		this.setTimeslot(timeslot);
 		this.setCalendarId(calendarId);
 	}
 
 	public int getTravelTime() {
 		return travelTime;
 	}
-
+	
 	public void setTravelTime(int travelTime) {
 		this.travelTime = travelTime;
 	}
@@ -36,7 +49,25 @@ public class PlanningResponse {
 	public void setTravelDistance(double travelDistance) {
 		this.travelDistance = travelDistance;
 	}
+
+	@JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone="Europe/Berlin")
+	public Date getStartDate() {
+		return startDate;
+	}
+
+	public void setStartDate(Date startDate) {
+		this.startDate = startDate;
+	}
+
+	@JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone="Europe/Berlin")
+	public Date getEndDate() {
+		return endDate;
+	}
 	
+	public void setEndDate(Date endDate) {
+		this.endDate = endDate;
+	}
+/*
 	public Timeslot getTimeslot() {
 		return timeslot;
 	}
@@ -44,7 +75,7 @@ public class PlanningResponse {
 	public void setTimeslot(Timeslot timeslot) {
 		this.timeslot = timeslot;
 	}
-
+*/
 	public String getCalendarId() {
 		return calendarId;
 	}
