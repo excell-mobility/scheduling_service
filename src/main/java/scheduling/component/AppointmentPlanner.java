@@ -82,7 +82,7 @@ public class AppointmentPlanner {
 				// check if user works on the selected day
 				if (workingDay != null) {
 					// get start and end position for user
-					//TODO here get the address from
+					// here get the address as geoPoint from IDMConnector
 //					GeoPoint startPosition = new GeoPoint(51.030201,13.727380);
 					GeoPoint startPosition = this.idmConnector.getGeoCoordinatesOfUser(calendarID);
 					System.out.println("UserID: "+calendarID +", startPosition: "+ startPosition );
