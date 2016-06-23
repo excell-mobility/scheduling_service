@@ -25,6 +25,7 @@ import beans.GeoPoint;
 import beans.WorkingDay;
 import extraction.AppointmentExtraction;
 import rest.CalendarConnector;
+import rest.IDMConnector;
 import rest.RoutingConnector;
 import scheduling.model.PlanningResponse;
 import utility.DateAnalyser;
@@ -36,6 +37,7 @@ public class AppointmentPlanner {
 	private final Logger log;
 	private final CalendarConnector calendarConnector;
 	private final RoutingConnector routingConnector;
+	private final IDMConnector idmConnector;
 	private final TourOptimizer optimizer;
 
 	public AppointmentPlanner() {
@@ -43,6 +45,7 @@ public class AppointmentPlanner {
 		this.calendarConnector = new CalendarConnector();
 		this.routingConnector = new RoutingConnector();
 		optimizer = new TourOptimizer(routingConnector);
+		this.idmConnector = new IDMConnector();
 	}
 	
 	public List<PlanningResponse> startPlanning(Integer year, Integer month, Integer day, 
@@ -79,7 +82,10 @@ public class AppointmentPlanner {
 				// check if user works on the selected day
 				if (workingDay != null) {
 					// get start and end position for user
-					GeoPoint startPosition = new GeoPoint(51.030201,13.727380);
+					//TODO here get the address from
+//					GeoPoint startPosition = new GeoPoint(51.030201,13.727380);
+					GeoPoint startPosition = this.idmConnector.getGeoCoordinatesOfUser(calendarID);
+					System.out.println("UserID: "+calendarID +", startPosition: "+ startPosition );
 					GeoPoint endPosition = startPosition;
 				
 					// create appointment location
