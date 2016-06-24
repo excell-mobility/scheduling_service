@@ -126,7 +126,7 @@ public class TourOptimizer {
 		// check, if it is possible to include appointment in the list
 		int durationOfAppointment = DateAnalyser.getDurationBetweenDates(
 				appointment.getStartDate(), appointment.getEndDate());
-		for(int index = 0; index < appointments.size() - 2; index++) {
+		for(int index = 0; index < appointments.size() - 1; index++) {
 			
 			CalendarAppointment startAppointment = appointments.get(index);
 			CalendarAppointment endAppointment = appointments.get(index + 1);
