@@ -27,6 +27,7 @@ import extraction.AppointmentExtraction;
 import rest.CalendarConnector;
 import rest.IDMConnector;
 import rest.RoutingConnector;
+import rest.TrackingConnector;
 import scheduling.model.PlanningResponse;
 import utility.DateAnalyser;
 import utility.MeasureConverter;
@@ -37,6 +38,7 @@ public class AppointmentPlanner {
 	private final Logger log;
 	private final CalendarConnector calendarConnector;
 	private final RoutingConnector routingConnector;
+ 	private final TrackingConnector trackingConnector;
 	private final IDMConnector idmConnector;
 	private final TourOptimizer optimizer;
 
@@ -44,6 +46,7 @@ public class AppointmentPlanner {
 	    this.log = LoggerFactory.getLogger(this.getClass());
 		this.calendarConnector = new CalendarConnector();
 		this.routingConnector = new RoutingConnector();
+ 		this.trackingConnector = new TrackingConnector();
 		optimizer = new TourOptimizer(routingConnector);
 		this.idmConnector = new IDMConnector();
 	}
@@ -81,20 +84,6 @@ public class AppointmentPlanner {
 				
 				// check if user works on the selected day
 				if (workingDay != null) {
-					// get start and end position for user
-					// get the address as geoPoint from IDMConnector
-					GeoPoint startPosition = this.idmConnector.getGeoCoordinatesOfUser(calendarID);
-					
-					if (startPosition == null)
-						// no startingAddress set - just use a dummy coordinate as before
-						startPosition = new GeoPoint(51.030201,13.727380);
-					
-					//System.out.println("UserID: "+calendarID +", startPosition: "+ startPosition );
-					GeoPoint endPosition = startPosition;
-				
-					// create appointment location
-					GeoPoint appointmentLocation = new GeoPoint(appointmentLat, appointmentLon);
-					
 					// get start and end of workingHours and breakHours
 					Date beginningDate = new GregorianCalendar(year, month-1, day, 
 							workingDay.getStartWorkingHour(), workingDay.getStartWorkingMinute()).getTime();
@@ -105,9 +94,38 @@ public class AppointmentPlanner {
 					Date endBreak = new GregorianCalendar(year, month-1, day, 
 							workingDay.getEndBreakHour(), workingDay.getEndBreakMinute()).getTime();
 					
+					// as for now we assume that start and end of a staff member are the same
+					GeoPoint endPosition = idmConnector.getGeoCoordinatesOfUser(calendarID);
+					
+					// check if current time is already after extracted dates
+					Date currentTime = new Date();
+					if (currentTime.after(endDate))
+						continue;
+					
+					// set position if currentTime is already after beginningDate
+					GeoPoint startPosition = null;
+					
+					if (currentTime.after(beginningDate)) {
+						beginningDate = currentTime;
+						
+						// get ID of tracking device from IDM
+						String deviceId = idmConnector.extractDeviceIdOfUser(calendarID);
+						
+						// get current position of tracked device
+						startPosition = trackingConnector.getCurrentPosition(deviceId);
+					}
+					else
+						// get start and end position for user
+						// get the address as geoPoint from IDMConnector
+						startPosition = endPosition;
+					
+					// no startingAddress set, go on to next staff member
+					if (startPosition == null)
+						continue;
+					
+					// prepare the timeFilter to query the calendar service 
 					ZonedDateTime beginTime = beginningDate.toInstant().atZone(ZoneId.of("Europe/Berlin"));
 					ZonedDateTime endTime = endDate.toInstant().atZone(ZoneId.of("Europe/Berlin"));
-					
 					DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 //					LocalTime midnight = LocalTime.MIDNIGHT;
 //					LocalDate today = LocalDate.now(ZoneId.of("Europe/Berlin"));
@@ -123,16 +141,20 @@ public class AppointmentPlanner {
 					// get appointments already set in calendar service
 					JSONArray appointmentsForCalendar = calendarConnector.getAppointmentsForCalendar(calendarID, timeFilter.toString());
 					List<CalendarAppointment> appointments = appointmentExtraction.extractAppointments(appointmentsForCalendar);
-				
+
+					// create appointment location
+					GeoPoint appointmentLocation = new GeoPoint(appointmentLat, appointmentLon);
+					
 					// no appointments found, choose earliest date possible from working hours
-					if (appointments == null || appointments.isEmpty()) {	
+					if (appointments == null || appointments.isEmpty()) {
+						
 						// calculate travel distance for starting position of user to appointment
 						int travelTimeInMinutes = MeasureConverter.getTimeInMinutes(
 								routingConnector.getTravelTime(startPosition, appointmentLocation));
 					
 						double travelDistance = 
 								routingConnector.getTravelDistance(startPosition, appointmentLocation);
-								
+						
 						// get start time for first appointment incl. travel time
 						Date beginFirstAppointment = DateAnalyser.getEarliestPossibleStartingDate(
 								beginningDate, travelTimeInMinutes, false);
@@ -153,7 +175,7 @@ public class AppointmentPlanner {
 									calendarID
 									));
 					}
-					else {			
+					else {
 						// find a possible time slot
 						optimizer.setAppointments(appointments);
 						optimizer.setBeginWork(beginningDate);

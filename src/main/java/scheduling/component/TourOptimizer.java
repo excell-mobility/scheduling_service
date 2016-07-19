@@ -157,7 +157,9 @@ public class TourOptimizer {
 		if (beginLocation != null && beginWork != null)
 			tempAppointments.add(new CalendarAppointment(beginLocation, beginWork, beginWork, calendarId));
 		
-		tempAppointments.addAll(appointments);
+		for (CalendarAppointment app : appointments)
+			if (app.getEndDate().after(beginWork))
+				tempAppointments.add(app);		
 		
 		if (endLocation != null && endWork != null)
 			tempAppointments.add(new CalendarAppointment(endLocation, endWork, endWork, calendarId));

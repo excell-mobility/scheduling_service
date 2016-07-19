@@ -16,7 +16,7 @@ import com.google.common.collect.Lists;
 import beans.CalendarAppointment;
 import beans.GeoPoint;
 import beans.WorkingDay;
-import rest.RoutingConnector;
+//import rest.RoutingConnector;
 import scheduling.component.TourOptimizer;
 import scheduling.model.PlanningResponse;
 
