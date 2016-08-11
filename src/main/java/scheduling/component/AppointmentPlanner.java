@@ -112,7 +112,15 @@ public class AppointmentPlanner {
 						String deviceId = idmConnector.extractDeviceIdOfUser(calendarID);
 						
 						// get current position of tracked device
-						startPosition = trackingConnector.getCurrentPosition(deviceId);
+						try {
+							startPosition = trackingConnector.getCurrentPosition(deviceId);
+							
+							if (startPosition == null)
+								startPosition = endPosition;
+						}
+						catch (Exception ex) {
+							startPosition = endPosition;
+						}
 					}
 					else
 						// get start and end position for user
@@ -123,10 +131,10 @@ public class AppointmentPlanner {
 					if (startPosition == null)
 						continue;
 					
-					// prepare the timeFilter to query the calendar service 
-					ZonedDateTime beginTime = beginningDate.toInstant().atZone(ZoneId.of("Europe/Berlin"));
-					ZonedDateTime endTime = endDate.toInstant().atZone(ZoneId.of("Europe/Berlin"));
-					DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+					// prepare the timeFilter to query the calendar service
+					ZonedDateTime beginTime = beginningDate.toInstant().atZone(ZoneId.of("GMT"));
+					ZonedDateTime endTime = endDate.toInstant().atZone(ZoneId.of("GMT"));
+					DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS+02:00");
 //					LocalTime midnight = LocalTime.MIDNIGHT;
 //					LocalDate today = LocalDate.now(ZoneId.of("Europe/Berlin"));
 //					ZonedDateTime todayStart = ZonedDateTime.of(today, midnight, ZoneId.of("Europe/Berlin"));
@@ -135,8 +143,8 @@ public class AppointmentPlanner {
 					
 					// construct time filter
 					StringBuilder timeFilter = new StringBuilder("")
-							.append("{\"begin\": \"").append(beginTime.format(formatter.withZone(ZoneId.of("Europe/Berlin")))).append("\",")
-							.append("\"end\": \"").append(endTime.format(formatter.withZone(ZoneId.of("Europe/Berlin")))).append("\"}");
+							.append("{\"begin\": \"").append(beginTime.format(formatter)).append("\",")
+							.append("\"end\": \"").append(endTime.format(formatter)).append("\"}");
 					
 					// get appointments already set in calendar service
 					JSONArray appointmentsForCalendar = calendarConnector.getAppointmentsForCalendar(calendarID, timeFilter.toString());
