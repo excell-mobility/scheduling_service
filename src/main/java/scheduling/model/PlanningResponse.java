@@ -50,7 +50,7 @@ public class PlanningResponse {
 		this.travelDistance = travelDistance;
 	}
 
-	@JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone="Europe/Berlin")
+	@JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss.SSS+02:00", timezone="GMT")
 	public Date getStartDate() {
 		return startDate;
 	}
@@ -59,7 +59,7 @@ public class PlanningResponse {
 		this.startDate = startDate;
 	}
 
-	@JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone="Europe/Berlin")
+	@JsonFormat(pattern="yyyy-MM-dd'T'HH:mm:ss.SSS+02:00", timezone="GMT")
 	public Date getEndDate() {
 		return endDate;
 	}
