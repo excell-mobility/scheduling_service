@@ -134,7 +134,7 @@ public class AppointmentPlanner {
 					// prepare the timeFilter to query the calendar service
 					ZonedDateTime beginTime = beginningDate.toInstant().atZone(ZoneId.of("GMT"));
 					ZonedDateTime endTime = endDate.toInstant().atZone(ZoneId.of("GMT"));
-					DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS+02:00");
+					DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS+00:00");
 //					LocalTime midnight = LocalTime.MIDNIGHT;
 //					LocalDate today = LocalDate.now(ZoneId.of("Europe/Berlin"));
 //					ZonedDateTime todayStart = ZonedDateTime.of(today, midnight, ZoneId.of("Europe/Berlin"));
