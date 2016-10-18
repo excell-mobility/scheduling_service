@@ -95,7 +95,7 @@ public class AppointmentPlanner {
 							workingDay.getEndBreakHour(), workingDay.getEndBreakMinute()).getTime();
 					
 					// as for now we assume that start and end of a staff member are the same
-					GeoPoint endPosition = idmConnector.getGeoCoordinatesOfUser(calendarID);
+					GeoPoint endPosition = idmConnector.getGeoCoordByUserId(calendarID);
 					
 					// check if current time is already after extracted dates
 					Date currentTime = new Date();
