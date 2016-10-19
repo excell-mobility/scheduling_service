@@ -23,6 +23,7 @@ import beans.CalendarAppointment;
 import beans.GeoPoint;
 //import beans.Timeslot;
 import beans.WorkingDay;
+import exceptions.RoutingNotFoundException;
 import extraction.AppointmentExtraction;
 import rest.CalendarConnector;
 import rest.IDMConnector;
@@ -156,32 +157,37 @@ public class AppointmentPlanner {
 					// no appointments found, choose earliest date possible from working hours
 					if (appointments == null || appointments.isEmpty()) {
 						
-						// calculate travel distance for starting position of user to appointment
-						int travelTimeInMinutes = MeasureConverter.getTimeInMinutes(
-								routingConnector.getTravelTime(startPosition, appointmentLocation));
-					
-						double travelDistance = 
-								routingConnector.getTravelDistance(startPosition, appointmentLocation);
+						try {
+							// calculate travel distance for starting position of user to appointment
+							int travelTimeInMinutes = MeasureConverter.getTimeInMinutes(
+									routingConnector.getTravelTime(startPosition, appointmentLocation));
 						
-						// get start time for first appointment incl. travel time
-						Date beginFirstAppointment = DateAnalyser.getEarliestPossibleStartingDate(
-								beginningDate, travelTimeInMinutes, false);
+							double travelDistance = 
+									routingConnector.getTravelDistance(startPosition, appointmentLocation);
 						
-						Calendar calendar = Calendar.getInstance();
-						calendar.setTime(beginFirstAppointment);
-						calendar.add(Calendar.MINUTE, durationOfAppointmentInMin);
-						Date endFirstAppointment = calendar.getTime();
-						
-						// only add time slot if duration of appointment does not exceed the end of the working day
-						if (endFirstAppointment.before(endDate))
-							timeslots.add(new PlanningResponse(
-									travelTimeInMinutes * 2,
-									travelDistance * 2,
-									beginFirstAppointment, 
-									endFirstAppointment,
-									//new Timeslot(beginFirstAppointment, endFirstAppointment),
-									calendarID
-									));
+							// get start time for first appointment incl. travel time
+							Date beginFirstAppointment = DateAnalyser.getEarliestPossibleStartingDate(
+									beginningDate, travelTimeInMinutes, false);
+							
+							Calendar calendar = Calendar.getInstance();
+							calendar.setTime(beginFirstAppointment);
+							calendar.add(Calendar.MINUTE, durationOfAppointmentInMin);
+							Date endFirstAppointment = calendar.getTime();
+							
+							// only add time slot if duration of appointment does not exceed the end of the working day
+							if (endFirstAppointment.before(endDate))
+								timeslots.add(new PlanningResponse(
+										travelTimeInMinutes * 2,
+										travelDistance * 2,
+										beginFirstAppointment, 
+										endFirstAppointment,
+										//new Timeslot(beginFirstAppointment, endFirstAppointment),
+										calendarID
+										));
+						}
+						catch (RoutingNotFoundException routeEx) {
+							// no result for given coordinates - time slot will not be considered
+						}
 					}
 					else {
 						// find a possible time slot
