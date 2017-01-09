@@ -65,6 +65,14 @@
       <version>2.3.1</version>
     </dependency>
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <dependency>
     	<groupId>excell</groupId>
     	<artifactId>excellapis</artifactId>
     	  <version>0.0.1-SNAPSHOT</version>
