@@ -87,7 +87,7 @@ public class Application {
           .genericModelSubstitutes(ResponseEntity.class)
           //.protocols(Sets.newHashSet("https"))
           //.host("localhost:44434")
-          .host("dbl43.beuth-hochschule.de/excell-scheduling-api")
+          .host("141.64.5.234/excell-scheduling-api")
           .apiInfo(apiInfo())
           ;
     }
