@@ -2,9 +2,11 @@ package scheduling.controller;
 
 import java.util.List;
 
+import org.json.JSONArray;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,6 +26,20 @@ public class PlanningController {
 	
 	@Autowired
 	private AppointmentPlanner appointmentPlanner;
+	
+	@RequestMapping(value = "/v1/schedulingnew", method = RequestMethod.POST)
+    @ApiOperation(
+    		value = "Get possible time slots for appointments", 
+    		response=PlanningResponse.class, 
+    		responseContainer="List",
+    		produces = "application/json")
+    @ResponseBody
+    public List<PlanningResponse> schedulingnew(
+    		@ApiParam(name="jsonArrayInput", value="JSON array of time gaps with coordinates")
+    		@RequestBody String jsonArrayInput) {
+    		JSONArray jsonArray = new JSONArray(jsonArrayInput);
+    		return appointmentPlanner.startPlanningNew(jsonArray);
+    }
 	
 	@RequestMapping(value = "/v1/scheduling", method = RequestMethod.GET)
     @ApiOperation(

@@ -5,6 +5,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -235,6 +237,42 @@ public class AppointmentPlanner {
 		}*/
 		
 		// return the list of time slots or error message
+		return planningList;
+	}
+
+	public List<PlanningResponse> startPlanningNew(JSONArray jsonArray) {
+		
+		List<PlanningResponse> planningList = Lists.newLinkedList();
+		
+		for(int index = 0; index < jsonArray.length(); index++) {
+			
+			JSONObject object = jsonArray.getJSONObject(index);
+			if(object.has("StartLat") && object.has("StartLon") && object.has("EndLat") 
+					&& object.has("EndLon") && object.has("startTimestamp") && object.has("endTimestamp")) {
+				double startLatitude = object.getDouble("StartLat");
+				double startLongitude = object.getDouble("StartLon");
+				double endLatitude = object.getDouble("EndLat");
+				double endLongitude = object.getDouble("EndLon");
+				long startTimestamp = object.getLong("startTimestamp");
+				long endTimestamp = object.getLong("endTimestamp");
+				Date startDate = new Date(startTimestamp);
+				Date endDate = new Date(endTimestamp);
+				
+				GeoPoint start = new GeoPoint(startLatitude, startLongitude);
+				GeoPoint end = new GeoPoint(endLatitude, endLongitude);
+				try {
+					int travelTime = routingConnector.getTravelTime(start, end);
+					double travelDistance = routingConnector.getTravelDistance(start, end);
+					planningList.add(new PlanningResponse(travelTime, travelDistance, startDate, endDate, "1"));
+				} catch (Exception e) {
+					log.error("Routing problem happens " + e);
+				}
+				
+			}
+			
+		}
+		
+		Collections.sort(planningList);
 		return planningList;
 	}
 

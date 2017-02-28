@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 
 //import beans.Timeslot;
 
-public class PlanningResponse {
+public class PlanningResponse implements Comparable<PlanningResponse> {
 
 	private int travelTime;
 	private double travelDistance;
@@ -83,5 +83,30 @@ public class PlanningResponse {
 	public void setCalendarId(String calendarId) {
 		this.calendarId = calendarId;
 	}
-	
+
+	@Override
+	public String toString() {
+		return "PlanningResponse [travelTime=" + travelTime
+				+ ", travelDistance=" + travelDistance + ", startDate="
+				+ startDate + ", endDate=" + endDate + ", calendarId="
+				+ calendarId + "]";
+	}
+
+	@Override
+	public int compareTo(PlanningResponse arg0) {
+		int traveltime1 = travelTime;
+		int traveltime2 = arg0.travelTime;
+		double travelDistance1 = travelDistance;
+		double travelDistance2 = arg0.travelDistance;
+		
+		int comparison = Integer.compare(traveltime1, traveltime2);
+		if(comparison == 0) {
+			// travel time is the primary sorting object, therefore sort by distance now
+			return Double.compare(travelDistance1, travelDistance2);
+		} else {
+			return comparison;
+		}
+		
+	}
+
 }
