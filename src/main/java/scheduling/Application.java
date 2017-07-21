@@ -86,7 +86,7 @@ public class Application {
           .build()
           .genericModelSubstitutes(ResponseEntity.class)
           //.protocols(Sets.newHashSet("https"))
-          //.host("localhost:44434")
+//          .host("localhost:44434")
           .host("141.64.5.234/excell-scheduling-api")
           .apiInfo(apiInfo())
           ;

@@ -1,10 +1,12 @@
 package scheduling.component;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -20,9 +22,30 @@ import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.graphhopper.jsprit.core.algorithm.VehicleRoutingAlgorithm;
+import com.graphhopper.jsprit.core.algorithm.box.Jsprit;
+import com.graphhopper.jsprit.core.problem.Location;
+import com.graphhopper.jsprit.core.problem.VehicleRoutingProblem;
+import com.graphhopper.jsprit.core.problem.cost.VehicleRoutingTransportCosts;
+import com.graphhopper.jsprit.core.problem.job.Break;
+import com.graphhopper.jsprit.core.problem.job.Job;
+import com.graphhopper.jsprit.core.problem.solution.VehicleRoutingProblemSolution;
+import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.TimeWindow;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivities;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity;
+import com.graphhopper.jsprit.core.problem.vehicle.VehicleImpl;
+import com.graphhopper.jsprit.core.problem.vehicle.VehicleType;
+import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
+import com.graphhopper.jsprit.core.problem.vehicle.VehicleImpl.Builder;
+import com.graphhopper.jsprit.core.reporting.SolutionPrinter;
+import com.graphhopper.jsprit.core.util.Solutions;
+import com.graphhopper.jsprit.core.util.VehicleRoutingTransportCostsMatrix;
 
 import beans.CalendarAppointment;
 import beans.GeoPoint;
+import beans.Service;
+import beans.Vehicle;
 //import beans.Timeslot;
 import beans.WorkingDay;
 import exceptions.RoutingNotFoundException;
@@ -238,6 +261,225 @@ public class AppointmentPlanner {
 		
 		// return the list of time slots or error message
 		return planningList;
+	}
+	
+	public org.json.simple.JSONObject startPlanningCare(JSONObject jsonObject) {
+		
+		// extract start location
+		GeoPoint startFromCompany = null;
+		if(jsonObject.has("startLocation")) {
+			JSONObject location = jsonObject.getJSONObject("startLocation");
+			double latitude = location.has("latitude") ? location.getDouble("latitude") : 0.0;
+			double longitude = location.has("longitude") ? location.getDouble("longitude") : 0.0;
+			startFromCompany = new GeoPoint(latitude, longitude);
+		}
+		
+		List<Vehicle> vehicles = null;
+		if(jsonObject.has("vehicles")) {
+			vehicles = Lists.newLinkedList();
+			JSONArray jsonArray = jsonObject.getJSONArray("vehicles");
+			for(int index = 0; index < jsonArray.length(); index++) {
+				List<String> skills = Lists.newLinkedList();
+				JSONObject vehicleJSON = jsonArray.getJSONObject(index);
+				String vehicleID = vehicleJSON.has("vehicleID") ? vehicleJSON.getString("vehicleID") : "";
+				int earliestStart = vehicleJSON.has("earliestStart") ? vehicleJSON.getInt("earliestStart") : 0;
+				int latestArrival = vehicleJSON.has("latestArrival") ? vehicleJSON.getInt("latestArrival") : 0;
+				int breakStartWindow = 0;
+				int breakEndWindow = 0;
+				int breakTime = 0;
+				if(vehicleJSON.has("skills")) {
+					JSONArray skillArray = vehicleJSON.getJSONArray("skills");
+					for(int skillIndex = 0; skillIndex < skillArray.length(); skillIndex++) {
+						skills.add(skillArray.getString(skillIndex));
+					}
+				}
+				if(vehicleJSON.has("break")) {
+					JSONObject breakJSON = vehicleJSON.getJSONObject("break");
+					breakStartWindow = breakJSON.has("startWindow") ? breakJSON.getInt("startWindow") : 0;
+					breakEndWindow = breakJSON.has("endWindow") ? breakJSON.getInt("endWindow") : 0;
+					breakTime = breakJSON.has("breakTime") ? breakJSON.getInt("breakTime") : 0;
+				}
+				vehicles.add(new Vehicle(vehicleID, skills, earliestStart, 
+						latestArrival, breakStartWindow, breakEndWindow, breakTime));
+			}
+		}
+		
+		List<Service> services = null;
+		if(jsonObject.has("services")) {
+			services = Lists.newLinkedList();
+			JSONArray jsonArray = jsonObject.getJSONArray("services");
+			for(int index = 0; index < jsonArray.length(); index++) {
+				List<String> requiredSkills = Lists.newLinkedList();
+				JSONObject serviceJSON = jsonArray.getJSONObject(index);
+				String serviceID = serviceJSON.has("serviceID") ? serviceJSON.getString("serviceID") : "";
+				int serviceTime = serviceJSON.has("serviceTime") ? serviceJSON.getInt("serviceTime") : 0;
+				double longitude = 0.0;
+				double latitude = 0.0;
+				int start = 0;
+				int end = 0;
+				if(serviceJSON.has("requiredSkills")) {
+					JSONArray skillArray = serviceJSON.getJSONArray("requiredSkills");
+					for(int skillIndex = 0; skillIndex < skillArray.length(); skillIndex++) {
+						requiredSkills.add(skillArray.getString(skillIndex));
+					}
+				}
+				if(serviceJSON.has("location")) {
+					JSONObject locationJSON = serviceJSON.getJSONObject("location");
+					longitude = locationJSON.has("longitude") ? locationJSON.getDouble("longitude") : 0.0;
+					latitude = locationJSON.has("latitude") ? locationJSON.getDouble("latitude") : 0.0;
+				}
+				if(serviceJSON.has("timeWindow")) {
+					JSONObject timeJSON = serviceJSON.getJSONObject("timeWindow");
+					start = timeJSON.has("start") ? timeJSON.getInt("start") : 0;
+					end = timeJSON.has("end") ? timeJSON.getInt("end") : 0;
+				}
+				services.add(new Service(serviceID, new GeoPoint(latitude, longitude), serviceTime, 
+						requiredSkills, start, end));
+			}
+		}
+
+		VehicleRoutingTransportCostsMatrix.Builder costMatrixBuilder = VehicleRoutingTransportCostsMatrix.Builder.newInstance(true);
+		
+		// calculate the same distance and time between the starting point and all patients
+    	for(Service service: services) {
+    		
+    		double travelDistance = 0.0;
+    		int travelTime = 0;
+			try {
+				travelDistance = routingConnector.getTravelDistance(startFromCompany, service.getLocation());
+				travelTime = routingConnector.getTravelTime(startFromCompany, service.getLocation()) / 1000;
+			} catch (Exception e) {
+				log.error("Routing calculation not possible!");
+			}
+
+        	for(Vehicle vehicle: vehicles) {
+        		costMatrixBuilder.addTransportDistance(vehicle.getVehicleID(), service.getServiceID(), travelDistance);
+        		costMatrixBuilder.addTransportTime(vehicle.getVehicleID(), service.getServiceID(), travelTime);
+        	}
+
+    	}
+    	
+        for(int i = 0; i < services.size(); i++) {
+        	
+        	for(int j = i + 1; j < services.size(); j++) {
+        		
+        		double travelDistance = 0.0;
+        		int travelTime = 0;
+    			try {
+    				travelDistance = routingConnector.getTravelDistance(services.get(i).getLocation(), services.get(j).getLocation());
+    				travelTime = routingConnector.getTravelTime(services.get(i).getLocation(), services.get(j).getLocation()) / 1000;
+    			} catch (Exception e) {
+    				log.error("Routing calculation not possible!");
+    			}
+        		
+        		costMatrixBuilder.addTransportDistance(services.get(i).getServiceID(), 
+        				services.get(j).getServiceID(), travelDistance);
+        		costMatrixBuilder.addTransportTime(services.get(i).getServiceID(), 
+        				services.get(j).getServiceID(), travelTime);	
+        	}
+        	
+        }
+        
+        for(int i = 0; i < vehicles.size(); i++) {
+        	
+        	for(int j = i + 1; j < vehicles.size(); j++) {
+        		costMatrixBuilder.addTransportDistance(vehicles.get(i).getVehicleID(), 
+        				vehicles.get(j).getVehicleID(), 0);
+        		costMatrixBuilder.addTransportTime(vehicles.get(i).getVehicleID(), 
+        				vehicles.get(j).getVehicleID(), 0);	
+        	}
+        	
+        }
+        
+        VehicleRoutingTransportCosts costMatrix = costMatrixBuilder.build();
+
+		VehicleTypeImpl.Builder vehicleTypeBuilder = VehicleTypeImpl.Builder.newInstance("vehicleType");
+		VehicleType vehicleType = vehicleTypeBuilder
+				.setCostPerDistance(1)
+				.build();
+		
+        VehicleRoutingProblem.Builder vrpBuilder = VehicleRoutingProblem.Builder.newInstance();
+        vrpBuilder.setFleetSize(VehicleRoutingProblem.FleetSize.FINITE);
+        vrpBuilder.setRoutingCost(costMatrix);
+        
+        for(Vehicle vehicle: vehicles) {
+        	
+    		Break lunchBreak = Break.Builder.newInstance("Pause " + vehicle.getVehicleID())
+    				.setTimeWindow(TimeWindow.newInstance(vehicle.getBreakStartWindow(),
+    						vehicle.getBreakEndWindow()))
+    				.setServiceTime(vehicle.getBreakTime())
+    				.setPriority(1)
+    				.build();
+            Builder vehicleBuilder = Builder.newInstance(vehicle.getVehicleID());
+            vehicleBuilder.setStartLocation(Location.newInstance(vehicle.getVehicleID()));
+            vehicleBuilder.setEndLocation(Location.newInstance(vehicle.getVehicleID()));
+            vehicleBuilder.setType(vehicleType);
+            for(String skill: vehicle.getSkills()) {
+            	vehicleBuilder.addSkill(skill);
+            }
+            vehicleBuilder.setReturnToDepot(true);
+            vehicleBuilder.setBreak(lunchBreak);
+            vehicleBuilder.setLatestArrival(vehicle.getLatestArrival());
+            vehicleBuilder.setEarliestStart(vehicle.getEarliestStart());
+        	vrpBuilder.addVehicle(vehicleBuilder.build());
+        	
+        }
+        
+        for(Service service: services) {
+        	
+        	 com.graphhopper.jsprit.core.problem.job.Service.Builder serviceInstance = 
+        			 com.graphhopper.jsprit.core.problem.job.Service.Builder.newInstance(service.getServiceID());
+        	 		serviceInstance.setLocation(Location.newInstance(service.getServiceID()));
+        	 		if(!service.getRequiredSkills().isEmpty()) {
+        	 			for(String skill: service.getRequiredSkills()) {
+        	 				serviceInstance.addRequiredSkill(skill);
+        	 			}
+        	 		}
+            		serviceInstance.addTimeWindow(service.getStartWindow(),service.getEndWindow());
+            		serviceInstance.setServiceTime(service.getServiceTime());
+            		serviceInstance.setName(service.getServiceID());
+  
+        	vrpBuilder.addJob(serviceInstance.build());
+        	
+        }
+
+        VehicleRoutingProblem problem = vrpBuilder.build();
+
+		/*
+         * get the algorithm out-of-the-box.
+		 */
+
+        VehicleRoutingAlgorithm algorithm = Jsprit.createAlgorithm(problem);
+
+		/*
+         * and search a solution
+		 */
+        Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
+
+		/*
+         * get the best
+		 */
+        VehicleRoutingProblemSolution bestSolution = Solutions.bestOf(solutions);
+        Collection<VehicleRoute> routes = bestSolution.getRoutes();
+        
+//        SolutionPrinter.print(problem, bestSolution, SolutionPrinter.Print.VERBOSE);
+        
+		org.json.simple.JSONObject obj = new org.json.simple.JSONObject();
+		// create map with optimized tour
+		Map<String, List<String>> result = Maps.newHashMap();
+        for(VehicleRoute route: routes) {
+        	List<String> jobList = Lists.newLinkedList();
+        	for(TourActivity act : route.getActivities()) {
+        		String jobId = ((TourActivity.JobActivity) act).getJob().getId();
+        		jobList.add(jobId);
+        	}
+        	
+        	result.put(route.getVehicle().getId(), jobList);
+        }
+		
+        obj.putAll(result);
+		return obj;
+		
 	}
 
 	public List<PlanningResponse> startPlanningNew(JSONArray jsonArray) {

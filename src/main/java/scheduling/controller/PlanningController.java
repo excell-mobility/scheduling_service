@@ -3,6 +3,7 @@ package scheduling.controller;
 import java.util.List;
 
 import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -17,6 +18,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import scheduling.component.AppointmentPlanner;
+import scheduling.model.CareScenarioResponse;
 import scheduling.model.PlanningResponse;
 
 @CrossOrigin(origins = "*")
@@ -39,6 +41,19 @@ public class PlanningController {
     		@RequestBody String jsonArrayInput) {
     		JSONArray jsonArray = new JSONArray(jsonArrayInput);
     		return appointmentPlanner.startPlanningNew(jsonArray);
+    }
+	
+	@RequestMapping(value = "/v1/schedulingcare", method = RequestMethod.POST)
+    @ApiOperation(
+    		value = "Generate the scheduling for elder care", 
+    		response=CareScenarioResponse.class, 
+    		produces = "application/json")
+    @ResponseBody
+    public org.json.simple.JSONObject schedulingcare(
+    		@ApiParam(name="jsonObjectInput", value="JSON object with patients and carers informationen")
+    		@RequestBody String jsonObjectInput) {
+    		JSONObject jsonObject = new JSONObject(jsonObjectInput);
+    		return appointmentPlanner.startPlanningCare(jsonObject);
     }
 	
 	@RequestMapping(value = "/v1/scheduling", method = RequestMethod.GET)
