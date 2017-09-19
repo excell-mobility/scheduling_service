@@ -48,6 +48,7 @@ import beans.Service;
 import beans.Vehicle;
 //import beans.Timeslot;
 import beans.WorkingDay;
+import exceptions.InternalSchedulingErrorException;
 import exceptions.RoutingNotFoundException;
 import extraction.AppointmentExtraction;
 import rest.CalendarConnector;
@@ -78,7 +79,7 @@ public class AppointmentPlanner {
 	}
 	
 	public List<PlanningResponse> startPlanning(Integer year, Integer month, Integer day, 
-			Integer durationOfAppointmentInMin, Double appointmentLat, Double appointmentLon) {
+			Integer durationOfAppointmentInMin, Double appointmentLat, Double appointmentLon) throws InternalSchedulingErrorException {
 		
 		SimpleDateFormat dateFormat = new SimpleDateFormat("EEEEEEEE", Locale.ENGLISH);
 		String appointmentWeekDay = dateFormat.
@@ -234,7 +235,7 @@ public class AppointmentPlanner {
 			}
 		}
 		catch (Exception e) {
-			log.error("Error", "No appointment planning possible!");
+			throw new InternalSchedulingErrorException("No appointment planning possible!");
 		}
 		
 		// check the result from tour optimization
@@ -263,7 +264,14 @@ public class AppointmentPlanner {
 		return planningList;
 	}
 	
-	public org.json.simple.JSONObject startPlanningCare(JSONObject jsonObject) {
+	public org.json.simple.JSONObject startPlanningCare(JSONObject jsonObject) throws RoutingNotFoundException, InternalSchedulingErrorException {
+		
+		if(jsonObject == null 
+				|| jsonObject.isNull("startLocation")
+				|| jsonObject.isNull("vehicles")
+				|| jsonObject.isNull("services")) {
+			throw new InternalSchedulingErrorException("JSON is invalid, no scheduling possible for care scenario!");
+		}
 		
 		// extract start location
 		GeoPoint startFromCompany = null;
@@ -349,7 +357,11 @@ public class AppointmentPlanner {
 				travelDistance = routingConnector.getTravelDistance(startFromCompany, service.getLocation());
 				travelTime = routingConnector.getTravelTime(startFromCompany, service.getLocation()) / 1000;
 			} catch (Exception e) {
-				log.error("Routing calculation not possible!");
+				throw new RoutingNotFoundException("Routing calculation from " 
+						+ startFromCompany
+						+ " to service "
+						+ service.getServiceID()
+						+ " not possible!");
 			}
 
         	for(Vehicle vehicle: vehicles) {
@@ -369,7 +381,11 @@ public class AppointmentPlanner {
     				travelDistance = routingConnector.getTravelDistance(services.get(i).getLocation(), services.get(j).getLocation());
     				travelTime = routingConnector.getTravelTime(services.get(i).getLocation(), services.get(j).getLocation()) / 1000;
     			} catch (Exception e) {
-    				log.error("Routing calculation not possible!");
+    				throw new RoutingNotFoundException("Routing calculation between " 
+    							+ services.get(i).getServiceID() 
+    							+ " and "
+    							+ services.get(j).getServiceID()
+    							+ " not possible!");
     			}
         		
         		costMatrixBuilder.addTransportDistance(services.get(i).getServiceID(), 
@@ -482,7 +498,7 @@ public class AppointmentPlanner {
 		
 	}
 
-	public List<PlanningResponse> startPlanningNew(JSONArray jsonArray) {
+	public List<PlanningResponse> startPlanningNew(JSONArray jsonArray) throws RoutingNotFoundException {
 		
 		List<PlanningResponse> planningList = Lists.newLinkedList();
 		
@@ -507,7 +523,7 @@ public class AppointmentPlanner {
 					double travelDistance = routingConnector.getTravelDistance(start, end);
 					planningList.add(new PlanningResponse(travelTime, travelDistance, startDate, endDate, "1"));
 				} catch (Exception e) {
-					log.error("Routing problem happens " + e);
+					throw new RoutingNotFoundException("Routing problem happens");
 				}
 				
 			}

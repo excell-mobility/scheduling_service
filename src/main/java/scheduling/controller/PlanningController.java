@@ -5,6 +5,9 @@ import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.ResponseEntity.BodyBuilder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import exceptions.InternalSchedulingErrorException;
+import exceptions.RoutingNotFoundException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
@@ -38,7 +43,7 @@ public class PlanningController {
     @ResponseBody
     public List<PlanningResponse> schedulingnew(
     		@ApiParam(name="jsonArrayInput", value="JSON array of time gaps with coordinates")
-    		@RequestBody String jsonArrayInput) {
+    		@RequestBody String jsonArrayInput) throws RoutingNotFoundException {
     		JSONArray jsonArray = new JSONArray(jsonArrayInput);
     		return appointmentPlanner.startPlanningNew(jsonArray);
     }
@@ -51,7 +56,7 @@ public class PlanningController {
     @ResponseBody
     public org.json.simple.JSONObject schedulingcare(
     		@ApiParam(name="jsonObjectInput", value="JSON object with patients and carers informationen")
-    		@RequestBody String jsonObjectInput) {
+    		@RequestBody String jsonObjectInput) throws RoutingNotFoundException, InternalSchedulingErrorException {
     		JSONObject jsonObject = new JSONObject(jsonObjectInput);
     		return appointmentPlanner.startPlanningCare(jsonObject);
     }
@@ -80,15 +85,20 @@ public class PlanningController {
     		@RequestParam(value="appointmentLat", defaultValue="0.0") Double appointmentLat,
     		
     		@ApiParam(name="appointmentLon", value="Longitude of new appointment", defaultValue="13.736") 
-    		@RequestParam(value="appointmentLon", defaultValue="0.0") Double appointmentLon) {
+    		@RequestParam(value="appointmentLon", defaultValue="0.0") Double appointmentLon) throws InternalSchedulingErrorException {
         
 		return appointmentPlanner.startPlanning(year, month, day, 
         		durationOfAppointmentInMin, appointmentLat, appointmentLon);
     }
     
-    @ExceptionHandler(value = Exception.class)
-    public String inputParameterError() {
-      return "Your input parameters for the appointment planning service are invalid!";
+    @ExceptionHandler(value = RoutingNotFoundException.class)
+    public BodyBuilder routingError() {
+    	return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    
+    @ExceptionHandler(value = InternalSchedulingErrorException.class)
+    public BodyBuilder schedulingError() {
+    	return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR);
     }
     
 }

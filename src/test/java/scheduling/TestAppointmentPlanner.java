@@ -8,6 +8,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
+import exceptions.InternalSchedulingErrorException;
 import scheduling.component.AppointmentPlanner;
 import scheduling.model.PlanningResponse;
 
@@ -21,7 +22,7 @@ public class TestAppointmentPlanner {
 	}
 
 	@Test
-	public void testAppointmentPlanningNotPossible() {
+	public void testAppointmentPlanningNotPossible() throws InternalSchedulingErrorException {
 		
 		List<PlanningResponse> startPlanning = planner.startPlanning(2016, 02, 24, 1000, 51.030306, 13.730407);
 		System.out.println(startPlanning);
@@ -29,7 +30,7 @@ public class TestAppointmentPlanner {
 	}
 	
 	@Test
-	public void testAppointmentPlanningBeginning() {
+	public void testAppointmentPlanningBeginning() throws InternalSchedulingErrorException {
 
 		List<PlanningResponse> startPlanning = planner.startPlanning(2016, 02, 24, 50, 51.030306, 13.730407);
 		assertFalse(startPlanning.get(0).toString().contains("Error"));
@@ -37,7 +38,7 @@ public class TestAppointmentPlanner {
 	}
 	
 	@Test
-	public void testAppointmentPlanningEnd() {
+	public void testAppointmentPlanningEnd() throws InternalSchedulingErrorException {
 		
 		List<PlanningResponse> startPlanning = planner.startPlanning(2016, 02, 24, 58, 51.030306, 13.730407);
 		assertFalse(startPlanning.get(0).toString().contains("Error"));

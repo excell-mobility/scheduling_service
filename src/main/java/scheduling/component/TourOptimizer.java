@@ -13,6 +13,7 @@ import com.google.common.collect.Maps;
 
 import beans.CalendarAppointment;
 import beans.GeoPoint;
+import exceptions.InternalSchedulingErrorException;
 //import beans.Timeslot;
 import exceptions.RoutingNotFoundException;
 import rest.RoutingConnector;
@@ -258,7 +259,7 @@ public class TourOptimizer {
 					}
 				}
 			} catch (RoutingNotFoundException routEx) {
-				// TODO do something here
+				throw new RoutingNotFoundException("Routing not possible!");
 			}
 		}
 		
