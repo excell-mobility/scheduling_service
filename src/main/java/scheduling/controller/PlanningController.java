@@ -52,6 +52,7 @@ public class PlanningController {
     @ApiOperation(
     		value = "Generate the scheduling for elder care", 
     		response=CareScenarioResponse.class, 
+    		responseContainer="Map",
     		produces = "application/json")
     @ResponseBody
     public org.json.simple.JSONObject schedulingcare(
