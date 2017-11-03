@@ -63,6 +63,7 @@ public class PlanningController {
     }
 	
 	@RequestMapping(value = "/v1/scheduling", method = RequestMethod.GET)
+	@Deprecated
     @ApiOperation(
     		value = "Get possible time slots for appointments", 
     		response=PlanningResponse.class, 
