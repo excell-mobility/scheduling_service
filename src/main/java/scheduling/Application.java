@@ -2,18 +2,28 @@ package scheduling;
 
 //import java.util.List;
 
+import java.util.ArrayList;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.ResponseEntity;
 
+
+
+import com.google.common.base.Predicates;
+
 //import beans.GeoPoint;
 //import rest.RoutingConnector;
 import scheduling.component.AppointmentPlanner;
 //import scheduling.component.TourOptimizer;
 import scheduling.controller.PlanningController;
+import springfox.documentation.builders.PathSelectors;
+import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.service.ApiInfo;
+import springfox.documentation.service.Contact;
+import springfox.documentation.service.VendorExtension;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
@@ -81,8 +91,10 @@ public class Application {
         return new Docket(DocumentationType.SWAGGER_2)
           .groupName("excell-scheduling-api")
           .select()
-          	//.apis(RequestHandlerSelectors.any()) 
-          	//.paths(PathSelectors.any())
+          .apis(RequestHandlerSelectors.any()) 
+          .paths(Predicates.not(PathSelectors.regex("/error")))
+          .paths(Predicates.not(PathSelectors.regex("/health")))
+          .paths(Predicates.not(PathSelectors.regex("/health.json")))
           .build()
           .genericModelSubstitutes(ResponseEntity.class)
           //.protocols(Sets.newHashSet("https"))
@@ -98,9 +110,14 @@ public class Application {
           "This API provides a list of suitable time slots for appointments based on route optimization.",
           "Version 1.0",
           "Use only for testing",
-          "fkunde@beuth-hochschule",
+          new Contact(
+        		  "Felix Kunde, Stephan Pieper",
+        		  "https://projekt.beuth-hochschule.de/magda/poeple",
+        		  "spieper@beuth-hochschule"),
           "Apache 2",
-          "http://www.apache.org/licenses/LICENSE-2.0");
+          "http://www.apache.org/licenses/LICENSE-2.0",
+          new ArrayList<VendorExtension>());
         return apiInfo;
     }
+    
 }
