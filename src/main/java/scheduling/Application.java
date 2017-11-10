@@ -145,7 +145,11 @@ public class Application {
     private ApiInfo apiInfo() {
         ApiInfo apiInfo = new ApiInfo(
           "ExCELL Scheduling API",
-          "This API provides a list of suitable time slots for appointments based on route optimization.",
+          "This API provides a list of suitable time slots for appointments based on route optimization. "
+          + "The main use cases of the tour optimization algorithm are the care planning and the logistic scenario. "
+          + "For the care planning scenario vehicles and services are optimized, "
+          + "whereas for the logistic case vehicles and corresponding customer appointments are analyzed. "
+          + "The scheduling API for the above use cases consumes JSON and outputs JSON.",
           "Version 1.0",
           "Use only for testing",
           new Contact(
