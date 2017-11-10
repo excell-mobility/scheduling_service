@@ -3,6 +3,7 @@ package scheduling;
 //import java.util.List;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 
 
 import com.google.common.base.Predicates;
+import com.google.common.collect.Lists;
 
 //import beans.GeoPoint;
 //import rest.RoutingConnector;
@@ -22,10 +24,16 @@ import scheduling.controller.PlanningController;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.service.ApiInfo;
+import springfox.documentation.service.ApiKey;
+import springfox.documentation.service.AuthorizationScope;
 import springfox.documentation.service.Contact;
+import springfox.documentation.service.SecurityReference;
 import springfox.documentation.service.VendorExtension;
 import springfox.documentation.spi.DocumentationType;
+import springfox.documentation.spi.service.contexts.SecurityContext;
 import springfox.documentation.spring.web.plugins.Docket;
+import springfox.documentation.swagger.web.ApiKeyVehicle;
+import springfox.documentation.swagger.web.SecurityConfiguration;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 @SpringBootApplication
@@ -99,11 +107,41 @@ public class Application {
           .genericModelSubstitutes(ResponseEntity.class)
           //.protocols(Sets.newHashSet("https"))
 //          .host("localhost:44434")
-          .host("141.64.5.234/excell-scheduling-api")
+          //.host("141.64.5.234/excell-scheduling-api")
+          .host("dlr-integration.minglabs.com/api/v1/service-request/schedulingservice")
+          .securitySchemes(Lists.newArrayList(apiKey()))
+          .securityContexts(Lists.newArrayList(securityContext()))
           .apiInfo(apiInfo())
           ;
     }
     
+	private ApiKey apiKey() {
+		return new ApiKey("api_key", "Authorization", "header");
+	}
+	
+    private SecurityContext securityContext() {
+        return SecurityContext.builder()
+            .securityReferences(defaultAuth())
+            .forPaths(PathSelectors.regex("/*.*"))
+            .build();
+    }
+
+    private List<SecurityReference> defaultAuth() {
+    	List<SecurityReference> ls = new ArrayList<>();
+    	AuthorizationScope authorizationScope
+    		= new AuthorizationScope("global", "accessEverything");
+    	AuthorizationScope[] authorizationScopes = new AuthorizationScope[1];
+    	authorizationScopes[0] = authorizationScope;
+    	SecurityReference s = new SecurityReference("api_key", authorizationScopes);
+    	ls.add(s);
+    	return ls;
+    }
+
+	@Bean
+	public SecurityConfiguration security() {
+		return new SecurityConfiguration(null, null, null, null, "Token", ApiKeyVehicle.HEADER, "Authorization", ",");
+	}
+	
     private ApiInfo apiInfo() {
         ApiInfo apiInfo = new ApiInfo(
           "ExCELL Scheduling API",
@@ -111,7 +149,7 @@ public class Application {
           "Version 1.0",
           "Use only for testing",
           new Contact(
-        		  "Felix Kunde, Stephan Pieper",
+        		  "Stephan Pieper, Felix Kunde",
         		  "https://projekt.beuth-hochschule.de/magda/poeple",
         		  "spieper@beuth-hochschule"),
           "Apache 2",
