@@ -13,8 +13,11 @@ import org.springframework.http.ResponseEntity;
 
 
 
+
 import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
+
+import com.google.common.collect.Sets;
 
 //import beans.GeoPoint;
 //import rest.RoutingConnector;
@@ -105,7 +108,7 @@ public class Application {
           .paths(Predicates.not(PathSelectors.regex("/health.json")))
           .build()
           .genericModelSubstitutes(ResponseEntity.class)
-          //.protocols(Sets.newHashSet("https"))
+          .protocols(Sets.newHashSet("https"))
 //          .host("localhost:44434")
           //.host("141.64.5.234/excell-scheduling-api")
           .host("dlr-integration.minglabs.com/api/v1/service-request/schedulingservice")
