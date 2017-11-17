@@ -108,7 +108,7 @@ public class Application {
           .paths(Predicates.not(PathSelectors.regex("/health.json")))
           .build()
           .genericModelSubstitutes(ResponseEntity.class)
-          .protocols(Sets.newHashSet("https"))
+          .protocols(Sets.newHashSet("https", "http"))
 //          .host("localhost:44434")
           //.host("141.64.5.234/excell-scheduling-api")
           .host("dlr-integration.minglabs.com/api/v1/service-request/schedulingservice")
