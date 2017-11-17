@@ -11,12 +11,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.ResponseEntity;
 
-
-
-
 import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
-
 import com.google.common.collect.Sets;
 
 //import beans.GeoPoint;
@@ -152,7 +148,12 @@ public class Application {
           + "Die Hauptanwendungsfälle für den Tourenplanungsalgorithmus sind einerseits das Pflegeszenario und andererseits das Logistikszenario. "
           + "Für das Pflegeszenario werden Fahrzeuge und dazugehörige Pflegedienstleistungen optimiert, "
           + "wohingegen für das Logistikszenario Fahrzeuge und Kundentermine analysiert werden. "
-          + "Der Tourenplanungsalgorithmus nimmt für die obigen Anwendungsfälle JSON entgegen und generiert JSON als Rückgabe.",
+          + "Der Tourenplanungsalgorithmus nimmt für die obigen Anwendungsfälle JSON entgegen und generiert JSON als Rückgabe.\n\n"
+          + "The Scheduling API is designed to optimize the route of a trip with multiple stops."
+          + " It offers two endpoints which follow different purposes:\n"
+          + "schedulingnew finds the best fit for a new appointment into a given schedule of existing appointments (JSON array).\n"
+          + "schedulingcare plans the complete schedules for multiple cars."
+          + " Therefore, it requires a detailed description (JSON) about different client constraints.\n",
           "Version 1.0",
           "Use only for testing",
           new Contact(
