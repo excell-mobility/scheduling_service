@@ -117,7 +117,7 @@ public class Application {
           .pathProvider(new RelativePathProvider(servletContext) {
                 @Override
                 public String getApplicationBasePath() {
-                    return "/api/v1/service-request/schedulingservice/";
+                    return "/api/v1/service-request/schedulingservice";
                 }
             });
     }
