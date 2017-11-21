@@ -5,6 +5,8 @@ package scheduling;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.servlet.ServletContext;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +32,7 @@ import springfox.documentation.service.SecurityReference;
 import springfox.documentation.service.VendorExtension;
 import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spi.service.contexts.SecurityContext;
+import springfox.documentation.spring.web.paths.RelativePathProvider;
 import springfox.documentation.spring.web.plugins.Docket;
 import springfox.documentation.swagger.web.ApiKeyVehicle;
 import springfox.documentation.swagger.web.SecurityConfiguration;
@@ -94,7 +97,7 @@ public class Application {
     }
 
     @Bean
-    public Docket schedulingApi() { 
+    public Docket schedulingApi(ServletContext servletContext) { 
         return new Docket(DocumentationType.SWAGGER_2)
           .groupName("excell-scheduling-api")
           .select()
@@ -107,11 +110,16 @@ public class Application {
           .protocols(Sets.newHashSet("https"))
 //          .host("localhost:44434")
           //.host("141.64.5.234/excell-scheduling-api")
-          .host("dlr-integration.minglabs.com/api/v1/service-request/schedulingservice")
+          .host("dlr-integration.minglabs.com")
           .securitySchemes(Lists.newArrayList(apiKey()))
           .securityContexts(Lists.newArrayList(securityContext()))
           .apiInfo(apiInfo())
-          ;
+          .pathProvider(new RelativePathProvider(servletContext) {
+                @Override
+                public String getApplicationBasePath() {
+                    return "/api/v1/service-request/schedulingservice/";
+                }
+            });
     }
     
 	private ApiKey apiKey() {
@@ -127,10 +135,7 @@ public class Application {
 
     private List<SecurityReference> defaultAuth() {
     	List<SecurityReference> ls = new ArrayList<>();
-    	AuthorizationScope authorizationScope
-    		= new AuthorizationScope("global", "accessEverything");
-    	AuthorizationScope[] authorizationScopes = new AuthorizationScope[1];
-    	authorizationScopes[0] = authorizationScope;
+    	AuthorizationScope[] authorizationScopes = new AuthorizationScope[0];
     	SecurityReference s = new SecurityReference("api_key", authorizationScopes);
     	ls.add(s);
     	return ls;
