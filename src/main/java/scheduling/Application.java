@@ -159,7 +159,7 @@ public class Application {
           + "schedulingnew finds the best fit for a new appointment into a given schedule of existing appointments (JSON array).\n"
           + "schedulingcare plans the complete schedules for multiple cars."
           + " Therefore, it requires a detailed description (JSON) about different client constraints.\n",
-          "Version 1.0",
+          "1.0",
           "Use only for testing",
           new Contact(
         		  "Beuth Hochschule für Technik Berlin - Labor für Rechner- und Informationssysteme - MAGDa Gruppe",
