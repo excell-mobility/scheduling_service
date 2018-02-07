@@ -1,6 +1,5 @@
 package scheduling.component;
 
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -20,37 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.graphhopper.jsprit.core.algorithm.VehicleRoutingAlgorithm;
-import com.graphhopper.jsprit.core.algorithm.box.Jsprit;
-import com.graphhopper.jsprit.core.problem.Location;
-import com.graphhopper.jsprit.core.problem.VehicleRoutingProblem;
-import com.graphhopper.jsprit.core.problem.cost.VehicleRoutingTransportCosts;
-import com.graphhopper.jsprit.core.problem.job.Break;
-import com.graphhopper.jsprit.core.problem.job.Job;
-import com.graphhopper.jsprit.core.problem.solution.VehicleRoutingProblemSolution;
-import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
-import com.graphhopper.jsprit.core.problem.solution.route.activity.TimeWindow;
-import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivities;
-import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity;
-import com.graphhopper.jsprit.core.problem.vehicle.VehicleImpl;
-import com.graphhopper.jsprit.core.problem.vehicle.VehicleType;
-import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
-import com.graphhopper.jsprit.core.problem.vehicle.VehicleImpl.Builder;
-import com.graphhopper.jsprit.core.reporting.SolutionPrinter;
-import com.graphhopper.jsprit.core.util.Solutions;
-import com.graphhopper.jsprit.core.util.VehicleRoutingTransportCostsMatrix;
-
-import beans.CalendarAppointment;
-import beans.GeoPoint;
-import beans.Service;
-import beans.Vehicle;
-//import beans.Timeslot;
-import beans.WorkingDay;
-import exceptions.InternalSchedulingErrorException;
-import exceptions.RoutingNotFoundException;
-import extraction.AppointmentExtraction;
 import rest.CalendarConnector;
 import rest.IDMConnector;
 import rest.RoutingConnector;
@@ -58,6 +26,42 @@ import rest.TrackingConnector;
 import scheduling.model.PlanningResponse;
 import utility.DateAnalyser;
 import utility.MeasureConverter;
+import beans.CalendarAppointment;
+import beans.GeoPoint;
+import beans.JobConstraint;
+import beans.JobProperties;
+import beans.Service;
+import beans.Vehicle;
+//import beans.Timeslot;
+import beans.WorkingDay;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.graphhopper.jsprit.core.algorithm.VehicleRoutingAlgorithm;
+import com.graphhopper.jsprit.core.algorithm.box.Jsprit;
+import com.graphhopper.jsprit.core.algorithm.state.StateManager;
+import com.graphhopper.jsprit.core.problem.Location;
+import com.graphhopper.jsprit.core.problem.VehicleRoutingProblem;
+import com.graphhopper.jsprit.core.problem.constraint.ConstraintManager;
+import com.graphhopper.jsprit.core.problem.constraint.ConstraintManager.Priority;
+import com.graphhopper.jsprit.core.problem.constraint.HardActivityConstraint;
+import com.graphhopper.jsprit.core.problem.cost.VehicleRoutingTransportCosts;
+import com.graphhopper.jsprit.core.problem.job.Break;
+import com.graphhopper.jsprit.core.problem.job.Job;
+import com.graphhopper.jsprit.core.problem.misc.JobInsertionContext;
+import com.graphhopper.jsprit.core.problem.solution.VehicleRoutingProblemSolution;
+import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.TimeWindow;
+import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity;
+import com.graphhopper.jsprit.core.problem.vehicle.VehicleImpl.Builder;
+import com.graphhopper.jsprit.core.problem.vehicle.VehicleType;
+import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
+import com.graphhopper.jsprit.core.util.Solutions;
+import com.graphhopper.jsprit.core.util.VehicleRoutingTransportCostsMatrix;
+
+import exceptions.InternalSchedulingErrorException;
+import exceptions.RoutingNotFoundException;
+import extraction.AppointmentExtraction;
 
 @Component
 public class AppointmentPlanner {
@@ -282,6 +286,19 @@ public class AppointmentPlanner {
 			startFromCompany = new GeoPoint(latitude, longitude);
 		}
 		
+		List<JobConstraint> jobConstraints = null;
+		if(jsonObject.has("constraints")) {
+			jobConstraints = Lists.newLinkedList();
+			JSONArray jsonArray = jsonObject.getJSONArray("constraints");
+			for(int index = 0; index < jsonArray.length(); index++) {
+				JSONObject constraintJSON = jsonArray.getJSONObject(index);
+				String beforeJobId = constraintJSON.has("beforeJobId") ? constraintJSON.getString("beforeJobId") : "";
+				String afterJobId = constraintJSON.has("afterJobId") ? constraintJSON.getString("afterJobId") : "";
+				jobConstraints.add(new JobConstraint(beforeJobId, afterJobId));
+			}
+		}
+		final List<JobConstraint> jobConstraintsFinal = jobConstraints;
+		
 		List<Vehicle> vehicles = null;
 		if(jsonObject.has("vehicles")) {
 			vehicles = Lists.newLinkedList();
@@ -460,12 +477,71 @@ public class AppointmentPlanner {
         }
 
         VehicleRoutingProblem problem = vrpBuilder.build();
+        
+        // add constraints for the routing problem
+        StateManager stateManager = new StateManager(problem);
+        ConstraintManager constraintManager = new ConstraintManager(problem, stateManager);
+        
+		HardActivityConstraint hardActivityConstraint = new HardActivityConstraint() {
+			
+			@Override
+			public ConstraintsStatus fulfilled(JobInsertionContext iFacts,
+					TourActivity prevAct, TourActivity newAct,
+					TourActivity nextAct, double prevActDepTime) {
+				
+				if(jobConstraintsFinal != null && jobConstraintsFinal.size() > 0) {
+					
+					List<TourActivity> activities = iFacts.getRoute().getActivities();
+					
+					for(int i = 0; i < jobConstraintsFinal.size(); i++) {
+						
+						String idBefore = jobConstraintsFinal.get(i).getBeforeJobId();
+						String idAfter = jobConstraintsFinal.get(i).getAfterJobId();
+						int beforeIndex = 0;
+						int afterIndex = 0;
+						boolean foundBeforeAct = false;
+						boolean foundAfterAct = false;
+						
+						for(int act_index = 0; act_index < activities.size(); act_index++) {
+							
+							TourActivity tourActivity = activities.get(act_index);
+							if(tourActivity.getLocation().getId().equals(idBefore)) {
+								beforeIndex = act_index;
+								foundBeforeAct = true;
+							}
+							if(tourActivity.getLocation().getId().equals(idAfter)) {
+								afterIndex = act_index;
+								foundAfterAct = true;
+							}
+							
+						}
+						
+						if(foundAfterAct && foundBeforeAct && beforeIndex < afterIndex) {
+							return ConstraintsStatus.FULFILLED;
+						}
+						if(foundAfterAct && foundBeforeAct && beforeIndex > afterIndex) {
+							return ConstraintsStatus.NOT_FULFILLED;
+						}
+						
+					}
+					
+				}
+				
+				return ConstraintsStatus.FULFILLED;
+				
+			}
+		}; 
+		
+		constraintManager.addConstraint(hardActivityConstraint, Priority.CRITICAL);
 
 		/*
          * get the algorithm out-of-the-box.
 		 */
-
-        VehicleRoutingAlgorithm algorithm = Jsprit.createAlgorithm(problem);
+		
+		VehicleRoutingAlgorithm algorithm = Jsprit.Builder.newInstance(problem)
+	            .setStateAndConstraintManager(stateManager,constraintManager)
+	            .addCoreStateAndConstraintStuff(true)
+	            .buildAlgorithm();
 
 		/*
          * and search a solution
@@ -482,12 +558,16 @@ public class AppointmentPlanner {
         
 		org.json.simple.JSONObject obj = new org.json.simple.JSONObject();
 		// create map with optimized tour
-		Map<String, List<String>> result = Maps.newHashMap();
+		Map<String, List<JobProperties>> result = Maps.newHashMap();
         for(VehicleRoute route: routes) {
-        	List<String> jobList = Lists.newLinkedList();
+        	List<JobProperties> jobList = Lists.newLinkedList();
         	for(TourActivity act : route.getActivities()) {
-        		String jobId = ((TourActivity.JobActivity) act).getJob().getId();
-        		jobList.add(jobId);
+        		Job job = ((TourActivity.JobActivity) act).getJob();
+				String jobId = job.getId();
+        		jobList.add(new JobProperties(jobId, 
+        				Math.round(act.getArrTime()), 
+        				Math.round(act.getEndTime()),
+        				Math.round(act.getOperationTime())));
         	}
         	
         	result.put(route.getVehicle().getId(), jobList);
