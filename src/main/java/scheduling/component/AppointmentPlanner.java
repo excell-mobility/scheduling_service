@@ -493,10 +493,10 @@ public class AppointmentPlanner {
 					
 					List<TourActivity> activities = iFacts.getRoute().getActivities();
 					
-					for(int i = 0; i < jobConstraintsFinal.size(); i++) {
+					for(int const_index = 0; const_index < jobConstraintsFinal.size(); const_index++) {
 						
-						String idBefore = jobConstraintsFinal.get(i).getBeforeJobId();
-						String idAfter = jobConstraintsFinal.get(i).getAfterJobId();
+						String idBefore = jobConstraintsFinal.get(const_index).getBeforeJobId();
+						String idAfter = jobConstraintsFinal.get(const_index).getAfterJobId();
 						int beforeIndex = 0;
 						int afterIndex = 0;
 						boolean foundBeforeAct = false;
@@ -505,18 +505,23 @@ public class AppointmentPlanner {
 						for(int act_index = 0; act_index < activities.size(); act_index++) {
 							
 							TourActivity tourActivity = activities.get(act_index);
-							if(tourActivity.getLocation().getId().equals(idBefore)) {
+							
+							if(tourActivity.getLocation().getId().equals(idBefore) 
+									&& tourActivity.getName().equals("service")) {
 								beforeIndex = act_index;
 								foundBeforeAct = true;
 							}
-							if(tourActivity.getLocation().getId().equals(idAfter)) {
+							if(tourActivity.getLocation().getId().equals(idAfter)
+									&& tourActivity.getName().equals("service")) {
 								afterIndex = act_index;
 								foundAfterAct = true;
 							}
 							
 						}
 						
-						if(foundAfterAct && foundBeforeAct && beforeIndex < afterIndex) {
+						if(foundAfterAct && foundBeforeAct 
+								&& beforeIndex < afterIndex
+								&& otherConstraintsDoNotFail(activities, const_index, jobConstraintsFinal)) {
 							return ConstraintsStatus.FULFILLED;
 						}
 						if(foundAfterAct && foundBeforeAct && beforeIndex > afterIndex) {
@@ -530,6 +535,49 @@ public class AppointmentPlanner {
 				return ConstraintsStatus.FULFILLED;
 				
 			}
+
+			private boolean otherConstraintsDoNotFail(List<TourActivity> activities, 
+					int index, List<JobConstraint> jobConstraintsFinal) {
+				
+				if(index >= jobConstraintsFinal.size()) {
+					return true;
+				} else {
+					for(int i = index; i < jobConstraintsFinal.size(); i++) {
+						
+						String idBefore = jobConstraintsFinal.get(i).getBeforeJobId();
+						String idAfter = jobConstraintsFinal.get(i).getAfterJobId();
+						int beforeIndex = 0;
+						int afterIndex = 0;
+						boolean foundBeforeAct = false;
+						boolean foundAfterAct = false;
+						
+						for(int act_index = 0; act_index < activities.size(); act_index++) {
+							
+							TourActivity tourActivity = activities.get(act_index);
+							
+							if(tourActivity.getLocation().getId().equals(idBefore) 
+									&& tourActivity.getName().equals("service")) {
+								beforeIndex = act_index;
+								foundBeforeAct = true;
+							}
+							if(tourActivity.getLocation().getId().equals(idAfter)
+									&& tourActivity.getName().equals("service")) {
+								afterIndex = act_index;
+								foundAfterAct = true;
+							}
+							
+						}
+						
+						if(foundAfterAct && foundBeforeAct && beforeIndex > afterIndex) {
+							return false;
+						}
+						
+					}
+				}
+				
+				return true;
+			}
+
 		}; 
 		
 		constraintManager.addConstraint(hardActivityConstraint, Priority.CRITICAL);
