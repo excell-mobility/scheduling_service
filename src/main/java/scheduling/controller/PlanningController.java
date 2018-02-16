@@ -24,6 +24,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import scheduling.component.AppointmentPlanner;
 import scheduling.model.CareScenarioResponse;
+import scheduling.model.PickupScenarioResponse;
 import scheduling.model.PlanningResponse;
 
 @CrossOrigin(origins = "*")
@@ -60,6 +61,20 @@ public class PlanningController {
     		@RequestBody String jsonObjectInput) throws RoutingNotFoundException, InternalSchedulingErrorException {
     		JSONObject jsonObject = new JSONObject(jsonObjectInput);
     		return appointmentPlanner.startPlanningCare(jsonObject);
+    }
+	
+	@RequestMapping(value = "/v1/schedulingpickup", method = RequestMethod.POST)
+    @ApiOperation(
+    		value = "Generate the scheduling for pickup", 
+    		response=PickupScenarioResponse.class, 
+    		responseContainer="Map",
+    		produces = "application/json")
+    @ResponseBody
+    public org.json.simple.JSONObject schedulingpickup(
+    		@ApiParam(name="jsonObjectInput", value="JSON object with pickup and dropoff locations")
+    		@RequestBody String jsonObjectInput) throws RoutingNotFoundException, InternalSchedulingErrorException {
+    		JSONObject jsonObject = new JSONObject(jsonObjectInput);
+    		return appointmentPlanner.startPlanningPickup(jsonObject);
     }
 	
 	@RequestMapping(value = "/v1/scheduling", method = RequestMethod.GET)

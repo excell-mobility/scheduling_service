@@ -3,19 +3,21 @@ package scheduling.model;
 import java.util.List;
 import java.util.Map;
 
+import beans.JobProperties;
+
 public class CareScenarioResponse {
 
-	private Map<String, List<String>> response;
+	private Map<String, List<JobProperties>> response;
 
-	public CareScenarioResponse(Map<String, List<String>> response) {
+	public CareScenarioResponse(Map<String, List<JobProperties>> response) {
 		this.response = response;
 	}
 
-	public Map<String, List<String>> getResponse() {
+	public Map<String, List<JobProperties>> getResponse() {
 		return response;
 	}
 
-	public void setResponse(Map<String, List<String>> response) {
+	public void setResponse(Map<String, List<JobProperties>> response) {
 		this.response = response;
 	}
 
