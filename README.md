@@ -48,6 +48,10 @@ An online version of the scheduling API is available on the ExCELL Developer Por
 * fkunde [at] beuth-hochschule.de
 
 
+## Acknowledgement
+The Scheduling Service has been realized within the ExCELL project funded by the Federal Ministry for Economic Affairs and Energy (BMWi) and German Aerospace Center (DLR) - agreement 01MD15001B.
+
+
 ## Special Thanks
 
 * Graphopper Team
