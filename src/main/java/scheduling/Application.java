@@ -62,8 +62,6 @@ public class Application {
           .build()
           .genericModelSubstitutes(ResponseEntity.class)
           .protocols(Sets.newHashSet("https"))
-//          .host("localhost:44434")
-          //.host("141.64.5.234/excell-scheduling-api")
           .host("dlr-integration.minglabs.com")
           .securitySchemes(Lists.newArrayList(apiKey()))
           .securityContexts(Lists.newArrayList(securityContext()))
@@ -119,8 +117,8 @@ public class Application {
         		  "Beuth Hochschule für Technik Berlin - Labor für Rechner- und Informationssysteme - MAGDa Gruppe",
         		  "https://projekt.beuth-hochschule.de/magda/poeple",
         		  "spieper@beuth-hochschule"),
-          "Apache 2",
-          "http://www.apache.org/licenses/LICENSE-2.0",
+          "Link to source code",
+          "https://github.com/excell-mobility/scheduling_service",
           new ArrayList<VendorExtension>());
         return apiInfo;
     }
