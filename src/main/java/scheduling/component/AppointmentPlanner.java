@@ -12,6 +12,7 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -26,6 +27,7 @@ import rest.TrackingConnector;
 import scheduling.model.PlanningResponse;
 import utility.DateAnalyser;
 import utility.MeasureConverter;
+import beans.BlacklistItem;
 import beans.CalendarAppointment;
 import beans.GeoPoint;
 import beans.JobConstraint;
@@ -38,6 +40,7 @@ import beans.WorkingDay;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.graphhopper.jsprit.core.algorithm.VehicleRoutingAlgorithm;
 import com.graphhopper.jsprit.core.algorithm.box.Jsprit;
 import com.graphhopper.jsprit.core.algorithm.box.SchrimpfFactory;
@@ -750,6 +753,9 @@ public class AppointmentPlanner {
 		}
 		final List<JobConstraint> jobConstraintsFinal = jobConstraints;
 		
+		Set<String> nurseIdSet = Sets.newHashSet();
+		Set<String> patientIdSet = Sets.newHashSet();
+		
 		List<Vehicle> vehicles = null;
 		if(jsonObject.has("vehicles")) {
 			vehicles = Lists.newLinkedList();
@@ -758,6 +764,7 @@ public class AppointmentPlanner {
 				List<String> skills = Lists.newLinkedList();
 				JSONObject vehicleJSON = jsonArray.getJSONObject(index);
 				String vehicleID = vehicleJSON.has("vehicleID") ? vehicleJSON.getString("vehicleID") : "";
+				nurseIdSet.add(vehicleID);
 				int earliestStart = vehicleJSON.has("earliestStart") ? vehicleJSON.getInt("earliestStart") : 0;
 				int latestArrival = vehicleJSON.has("latestArrival") ? vehicleJSON.getInt("latestArrival") : 0;
 				int breakStartWindow = 0;
@@ -788,6 +795,7 @@ public class AppointmentPlanner {
 				List<String> requiredSkills = Lists.newLinkedList();
 				JSONObject serviceJSON = jsonArray.getJSONObject(index);
 				String serviceID = serviceJSON.has("serviceID") ? serviceJSON.getString("serviceID") : "";
+				patientIdSet.add(serviceID);
 				int serviceTime = serviceJSON.has("serviceTime") ? serviceJSON.getInt("serviceTime") : 0;
 				double longitude = 0.0;
 				double latitude = 0.0;
@@ -812,6 +820,45 @@ public class AppointmentPlanner {
 				services.add(new Service(serviceID, new GeoPoint(latitude, longitude), serviceTime, 
 						requiredSkills, start, end));
 			}
+		}
+		
+		List<BlacklistItem> blacklist = null;
+		if(jsonObject.has("blacklist")) {
+			blacklist = Lists.newLinkedList();
+			JSONArray jsonArray = jsonObject.getJSONArray("blacklist");
+			for(int index = 0; index < jsonArray.length(); index++) {
+				JSONObject blacklistItemJSON = jsonArray.getJSONObject(index);
+				String nurseId = blacklistItemJSON.has("nurseid") ? blacklistItemJSON.getString("nurseid") : "";
+				String patientId = blacklistItemJSON.has("patientid") ? blacklistItemJSON.getString("patientid") : "";
+				if(patientIdSet.contains(patientId) && nurseIdSet.contains(nurseId)) {
+					blacklist.add(new BlacklistItem(nurseId, patientId));
+				}
+			}
+		}
+		
+		// update services and vehicles
+		if(blacklist != null && blacklist.size() > 0) {
+			
+			for(Service service: services) {
+				for(BlacklistItem blacklistItem: blacklist) {
+					if(service.getServiceID().equals(blacklistItem.getPatientId())) {
+						List<String> requiredSkills = service.getRequiredSkills();
+						requiredSkills = updateSkills(requiredSkills, blacklistItem.getPatientId());
+						service.setRequiredSkills(requiredSkills);
+					}
+				}
+			}
+			
+			for(Vehicle vehicle: vehicles) {
+				for(BlacklistItem blacklistItem: blacklist) {
+					if(!vehicle.getVehicleID().equals(blacklistItem.getNurseId())) {
+						List<String> skills = vehicle.getSkills();
+						skills = updateSkills(skills, blacklistItem.getPatientId());
+						vehicle.setSkills(skills);
+					}
+				}
+			}
+			
 		}
 
 		VehicleRoutingTransportCostsMatrix.Builder costMatrixBuilder = VehicleRoutingTransportCostsMatrix.Builder.newInstance(true);
@@ -1075,6 +1122,22 @@ public class AppointmentPlanner {
         obj.putAll(result);
 		return obj;
 		
+	}
+
+	private List<String> updateSkills(List<String> requiredSkills,
+			String patientId) {
+
+		boolean found = false;
+		for(String skill: requiredSkills) {
+			if(skill.equals(patientId)) {
+				found = true;
+			}
+		}
+		if(!found) {
+			requiredSkills.add(patientId);
+		}
+		
+		return requiredSkills;
 	}
 
 	public List<PlanningResponse> startPlanningNew(JSONArray jsonArray) throws RoutingNotFoundException {
