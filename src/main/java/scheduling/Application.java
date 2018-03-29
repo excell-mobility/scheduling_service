@@ -110,7 +110,8 @@ public class Application {
           + " It offers two endpoints which follow different purposes:\n"
           + "schedulingnew finds the best fit for a new appointment into a given schedule of existing appointments (JSON array).\n"
           + "schedulingcare plans the complete schedules for multiple cars."
-          + " Therefore, it requires a detailed description (JSON) about different client constraints.\n",
+          + " Therefore, it requires a detailed description (JSON) about different client constraints.\n\n"
+          + "Dummy Input: https://projekt.beuth-hochschule.de/fileadmin/projekt/magda/Presentations/Testdaten_Scheduling.json",
           "1.0",
           "Use only for testing",
           new Contact(
