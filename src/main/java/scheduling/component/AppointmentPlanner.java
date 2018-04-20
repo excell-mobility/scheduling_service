@@ -728,7 +728,7 @@ public class AppointmentPlanner {
 				|| jsonObject.isNull("startLocation")
 				|| jsonObject.isNull("vehicles")
 				|| jsonObject.isNull("services")) {
-			throw new InternalSchedulingErrorException("JSON is invalid, no scheduling possible for care scenario!");
+			throw new InternalSchedulingErrorException("JSON input is invalid, no scheduling possible for care scenario!");
 		}
 		
 		// extract start location
@@ -740,6 +740,7 @@ public class AppointmentPlanner {
 			startFromCompany = new GeoPoint(latitude, longitude);
 		}
 		
+		// extract job constraints
 		List<JobConstraint> jobConstraints = null;
 		if(jsonObject.has("constraints")) {
 			jobConstraints = Lists.newLinkedList();
@@ -756,6 +757,7 @@ public class AppointmentPlanner {
 		Set<String> nurseIdSet = Sets.newHashSet();
 		Set<String> patientIdSet = Sets.newHashSet();
 		
+		// extract vehicles
 		List<Vehicle> vehicles = null;
 		if(jsonObject.has("vehicles")) {
 			vehicles = Lists.newLinkedList();
@@ -787,41 +789,14 @@ public class AppointmentPlanner {
 			}
 		}
 		
-		List<Service> services = null;
+		// extract services
+		List<Service> services = Lists.newLinkedList();
 		if(jsonObject.has("services")) {
-			services = Lists.newLinkedList();
 			JSONArray jsonArray = jsonObject.getJSONArray("services");
-			for(int index = 0; index < jsonArray.length(); index++) {
-				List<String> requiredSkills = Lists.newLinkedList();
-				JSONObject serviceJSON = jsonArray.getJSONObject(index);
-				String serviceID = serviceJSON.has("serviceID") ? serviceJSON.getString("serviceID") : "";
-				patientIdSet.add(serviceID);
-				int serviceTime = serviceJSON.has("serviceTime") ? serviceJSON.getInt("serviceTime") : 0;
-				double longitude = 0.0;
-				double latitude = 0.0;
-				int start = 0;
-				int end = 0;
-				if(serviceJSON.has("requiredSkills")) {
-					JSONArray skillArray = serviceJSON.getJSONArray("requiredSkills");
-					for(int skillIndex = 0; skillIndex < skillArray.length(); skillIndex++) {
-						requiredSkills.add(skillArray.getString(skillIndex));
-					}
-				}
-				if(serviceJSON.has("location")) {
-					JSONObject locationJSON = serviceJSON.getJSONObject("location");
-					longitude = locationJSON.has("longitude") ? locationJSON.getDouble("longitude") : 0.0;
-					latitude = locationJSON.has("latitude") ? locationJSON.getDouble("latitude") : 0.0;
-				}
-				if(serviceJSON.has("timeWindow")) {
-					JSONObject timeJSON = serviceJSON.getJSONObject("timeWindow");
-					start = timeJSON.has("start") ? timeJSON.getInt("start") : 0;
-					end = timeJSON.has("end") ? timeJSON.getInt("end") : 0;
-				}
-				services.add(new Service(serviceID, new GeoPoint(latitude, longitude), serviceTime, 
-						requiredSkills, start, end));
-			}
+			services.addAll(createServiceList(jsonArray, patientIdSet));
 		}
 		
+		// extract blacklist
 		List<BlacklistItem> blacklist = null;
 		if(jsonObject.has("blacklist")) {
 			blacklist = Lists.newLinkedList();
@@ -861,10 +836,30 @@ public class AppointmentPlanner {
 			
 		}
 
+		// extract services already planned
+		List<Service> plannedServices = Lists.newLinkedList();
+		JSONObject currentPlanning = null;
+        if(jsonObject.has("currentPlanning")) {
+        	currentPlanning = jsonObject.getJSONObject("currentPlanning");
+        	
+    		for (Vehicle vehicle : vehicles) {
+        	
+    			if (currentPlanning.has(vehicle.getVehicleID())) {
+    				
+		        	JSONArray plannedJobs = currentPlanning.getJSONArray(vehicle.getVehicleID());
+		        	plannedServices.addAll(createServiceList(plannedJobs, patientIdSet));
+		        	
+    			}
+    		}
+        }
+		
 		VehicleRoutingTransportCostsMatrix.Builder costMatrixBuilder = VehicleRoutingTransportCostsMatrix.Builder.newInstance(true);
 		
 		// calculate the same distance and time between the starting point and all patients
-    	for(Service service: services) {
+		List<Service> allServices = Lists.newLinkedList();
+		allServices.addAll(services);
+		allServices.addAll(plannedServices);
+    	for(Service service: allServices) {
     		
     		double travelDistance = 0.0;
     		int travelTime = 0;
@@ -886,27 +881,27 @@ public class AppointmentPlanner {
 
     	}
     	
-        for(int i = 0; i < services.size(); i++) {
+        for(int i = 0; i < allServices.size(); i++) {
         	
-        	for(int j = i + 1; j < services.size(); j++) {
+        	for(int j = i + 1; j < allServices.size(); j++) {
         		
         		double travelDistance = 0.0;
         		int travelTime = 0;
     			try {
-    				travelDistance = routingConnector.getTravelDistance(services.get(i).getLocation(), services.get(j).getLocation());
-    				travelTime = routingConnector.getTravelTime(services.get(i).getLocation(), services.get(j).getLocation()) / 1000;
+    				travelDistance = routingConnector.getTravelDistance(allServices.get(i).getLocation(), allServices.get(j).getLocation());
+    				travelTime = routingConnector.getTravelTime(allServices.get(i).getLocation(), allServices.get(j).getLocation()) / 1000;
     			} catch (Exception e) {
     				throw new RoutingNotFoundException("Routing calculation between " 
-    							+ services.get(i).getServiceID() 
+    							+ allServices.get(i).getServiceID() 
     							+ " and "
-    							+ services.get(j).getServiceID()
+    							+ allServices.get(j).getServiceID()
     							+ " not possible!");
     			}
         		
-        		costMatrixBuilder.addTransportDistance(services.get(i).getServiceID(), 
-        				services.get(j).getServiceID(), travelDistance);
-        		costMatrixBuilder.addTransportTime(services.get(i).getServiceID(), 
-        				services.get(j).getServiceID(), travelTime);	
+        		costMatrixBuilder.addTransportDistance(allServices.get(i).getServiceID(), 
+        				allServices.get(j).getServiceID(), travelDistance);
+        		costMatrixBuilder.addTransportTime(allServices.get(i).getServiceID(), 
+        				allServices.get(j).getServiceID(), travelTime);	
         	}
         	
         }
@@ -933,6 +928,7 @@ public class AppointmentPlanner {
         vrpBuilder.setFleetSize(VehicleRoutingProblem.FleetSize.FINITE);
         vrpBuilder.setRoutingCost(costMatrix);
         
+        // prepare vehicles for VRP
         for(Vehicle vehicle: vehicles) {
         	
     		Break lunchBreak = Break.Builder.newInstance("Pause " + vehicle.getVehicleID())
@@ -956,24 +952,28 @@ public class AppointmentPlanner {
         	
         }
         
-        for(Service service: services) {
-        	
-        	 com.graphhopper.jsprit.core.problem.job.Service.Builder serviceInstance = 
-        			 com.graphhopper.jsprit.core.problem.job.Service.Builder.newInstance(service.getServiceID());
-        	 		serviceInstance.setLocation(Location.newInstance(service.getServiceID()));
-        	 		if(!service.getRequiredSkills().isEmpty()) {
-        	 			for(String skill: service.getRequiredSkills()) {
-        	 				serviceInstance.addRequiredSkill(skill);
-        	 			}
-        	 		}
-            		serviceInstance.addTimeWindow(service.getStartWindow(),service.getEndWindow());
-            		serviceInstance.setServiceTime(service.getServiceTime());
-            		serviceInstance.setName(service.getServiceID());
-  
-        	vrpBuilder.addJob(serviceInstance.build());
-        	
-        }
+        // prepare new services for VRP
+        for(Service service: services)
+        	vrpBuilder.addJob(buildService(service));
 
+        // prepare initial services for VRP
+		for (com.graphhopper.jsprit.core.problem.vehicle.Vehicle vehicle : vrpBuilder.getAddedVehicles()) {
+    	
+			if (currentPlanning.has(vehicle.getId())) {
+				
+    			VehicleRoute.Builder initialRoute = VehicleRoute.Builder.newInstance(vehicle);
+
+	        	for (Service plannedService : plannedServices) {
+	        		com.graphhopper.jsprit.core.problem.job.Service service = buildService(plannedService);
+	        		vrpBuilder.addJob(service);
+	                initialRoute.addService(service);		                
+	            }
+	        	
+	        	vrpBuilder.addInitialVehicleRoute(initialRoute.build());
+			}
+        }
+    	
+		// create new VRP
         VehicleRoutingProblem problem = vrpBuilder.build();
         
         // add constraints for the routing problem
@@ -1113,7 +1113,8 @@ public class AppointmentPlanner {
         		jobList.add(new JobProperties(jobId, 
         				Math.round(act.getArrTime()), 
         				Math.round(act.getEndTime()),
-        				Math.round(act.getOperationTime())));
+        				Math.round(act.getOperationTime())
+        				));
         	}
         	
         	result.put(route.getVehicle().getId(), jobList);
@@ -1122,6 +1123,55 @@ public class AppointmentPlanner {
         obj.putAll(result);
 		return obj;
 		
+	}
+
+	private List<Service> createServiceList(JSONArray jsonArray, Set<String> patientIdSet) {
+		List<Service> services = Lists.newLinkedList();
+		for(int index = 0; index < jsonArray.length(); index++) {
+			List<String> requiredSkills = Lists.newLinkedList();
+			JSONObject serviceJSON = jsonArray.getJSONObject(index);
+
+			String serviceID = null;
+			if (serviceJSON.has("serviceID"))
+				serviceID = serviceJSON.getString("serviceID");
+			else {
+				if (serviceJSON.has("jobID"))
+					serviceID = serviceJSON.getString("jobID");
+				else
+					serviceID = "";
+			}
+			
+			patientIdSet.add(serviceID);
+			int serviceTime = serviceJSON.has("serviceTime") ? serviceJSON.getInt("serviceTime") : 0;
+			double longitude = 0.0;
+			double latitude = 0.0;
+			int start = 0;
+			int end = 0;
+			if(serviceJSON.has("requiredSkills")) {
+				JSONArray skillArray = serviceJSON.getJSONArray("requiredSkills");
+				for(int skillIndex = 0; skillIndex < skillArray.length(); skillIndex++) {
+					requiredSkills.add(skillArray.getString(skillIndex));
+				}
+			}
+			if(serviceJSON.has("location")) {
+				JSONObject locationJSON = serviceJSON.getJSONObject("location");
+				longitude = locationJSON.has("longitude") ? locationJSON.getDouble("longitude") : 0.0;
+				latitude = locationJSON.has("latitude") ? locationJSON.getDouble("latitude") : 0.0;
+			}
+			if(serviceJSON.has("timeWindow")) {
+				JSONObject timeJSON = serviceJSON.getJSONObject("timeWindow");
+				start = timeJSON.has("start") ? timeJSON.getInt("start") : 0;
+				end = timeJSON.has("end") ? timeJSON.getInt("end") : 0;
+			}
+			else {
+				start = serviceJSON.has("startJob") ? serviceJSON.getInt("startJob") : 0;
+				end = serviceJSON.has("endJob") ? serviceJSON.getInt("endJob") : 0;
+			}
+			services.add(new Service(serviceID, new GeoPoint(latitude, longitude), serviceTime, 
+					requiredSkills, start, end));
+		}		
+		
+		return services;
 	}
 
 	private List<String> updateSkills(List<String> requiredSkills,
@@ -1140,6 +1190,24 @@ public class AppointmentPlanner {
 		return requiredSkills;
 	}
 
+	private com.graphhopper.jsprit.core.problem.job.Service buildService(Service service) {
+	
+		com.graphhopper.jsprit.core.problem.job.Service.Builder serviceInstance = 
+				com.graphhopper.jsprit.core.problem.job.Service.Builder.newInstance(service.getServiceID());
+			
+		serviceInstance.setLocation(Location.newInstance(service.getServiceID()));
+			if(!service.getRequiredSkills().isEmpty()) {
+				for(String skill: service.getRequiredSkills()) {
+					serviceInstance.addRequiredSkill(skill);
+				}
+			}
+		serviceInstance.addTimeWindow(service.getStartWindow(),service.getEndWindow());
+		serviceInstance.setServiceTime(service.getServiceTime());
+		serviceInstance.setName(service.getServiceID());
+    	
+		return serviceInstance.build();
+	}
+	
 	public List<PlanningResponse> startPlanningNew(JSONArray jsonArray) throws RoutingNotFoundException {
 		
 		List<PlanningResponse> planningList = Lists.newLinkedList();
