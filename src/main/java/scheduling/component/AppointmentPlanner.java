@@ -956,21 +956,21 @@ public class AppointmentPlanner {
         for(Service service: services)
         	vrpBuilder.addJob(buildService(service));
 
-        // prepare initial services for VRP
-		for (com.graphhopper.jsprit.core.problem.vehicle.Vehicle vehicle : vrpBuilder.getAddedVehicles()) {
-    	
-			if (currentPlanning.has(vehicle.getId())) {
-				
-    			VehicleRoute.Builder initialRoute = VehicleRoute.Builder.newInstance(vehicle);
-
-	        	for (Service plannedService : plannedServices) {
-	        		com.graphhopper.jsprit.core.problem.job.Service service = buildService(plannedService);
-	        		vrpBuilder.addJob(service);
-	                initialRoute.addService(service);		                
-	            }
-	        	
-	        	vrpBuilder.addInitialVehicleRoute(initialRoute.build());
-			}
+        // prepare initial services for VRP if exist
+        if (currentPlanning != null) {
+			for (com.graphhopper.jsprit.core.problem.vehicle.Vehicle vehicle : vrpBuilder.getAddedVehicles()) {
+				if (currentPlanning.has(vehicle.getId())) {
+	    			VehicleRoute.Builder initialRoute = VehicleRoute.Builder.newInstance(vehicle);
+	
+		        	for (Service plannedService : plannedServices) {
+		        		com.graphhopper.jsprit.core.problem.job.Service service = buildService(plannedService);
+		        		vrpBuilder.addJob(service);
+		                initialRoute.addService(service);		                
+		            }
+		        	
+		        	vrpBuilder.addInitialVehicleRoute(initialRoute.build());
+				}
+	        }
         }
     	
 		// create new VRP
