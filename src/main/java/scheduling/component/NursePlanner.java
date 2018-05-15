@@ -44,28 +44,17 @@ import beans.Service;
 import beans.Vehicle;
 import exceptions.InternalSchedulingErrorException;
 import exceptions.RoutingNotFoundException;
-import rest.CalendarConnector;
-import rest.IDMConnector;
 import rest.RoutingConnector;
-import rest.TrackingConnector;
 
 @Component
 public class NursePlanner {
 	
 	private final Logger log;
-	private final CalendarConnector calendarConnector;
 	private final RoutingConnector routingConnector;
- 	private final TrackingConnector trackingConnector;
-	private final IDMConnector idmConnector;
-	private final TourOptimizer optimizer;
 
 	public NursePlanner() {
 	    this.log = LoggerFactory.getLogger(this.getClass());
-		this.calendarConnector = new CalendarConnector();
 		this.routingConnector = new RoutingConnector();
- 		this.trackingConnector = new TrackingConnector();
-		optimizer = new TourOptimizer(routingConnector);
-		this.idmConnector = new IDMConnector();
 	}
 	
 	public org.json.simple.JSONObject startPlanningCare(JSONObject jsonObject) throws RoutingNotFoundException, InternalSchedulingErrorException {
