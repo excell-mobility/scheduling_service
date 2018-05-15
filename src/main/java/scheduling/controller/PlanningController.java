@@ -23,16 +23,23 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import scheduling.component.AppointmentPlanner;
+import scheduling.component.NursePlanner;
+import scheduling.component.PickupPlanner;
+import scheduling.component.TravelTimeSorter;
 import scheduling.model.CareScenarioResponse;
 import scheduling.model.PickupScenarioResponse;
 import scheduling.model.PlanningResponse;
 
+@SuppressWarnings("deprecation")
 @CrossOrigin(origins = "*")
 @RestController
 @Api(value="/v1/scheduling")
 public class PlanningController {
 	
 	@Autowired
+	private TravelTimeSorter travelTimeSorter;
+	private NursePlanner nursePlanner;
+	private PickupPlanner pickupPlanner;
 	private AppointmentPlanner appointmentPlanner;
 	
 	@RequestMapping(value = "/v1/schedulingnew", method = RequestMethod.POST)
@@ -46,7 +53,7 @@ public class PlanningController {
     		@ApiParam(name="jsonArrayInput", value="JSON array of time gaps with coordinates")
     		@RequestBody String jsonArrayInput) throws RoutingNotFoundException {
     		JSONArray jsonArray = new JSONArray(jsonArrayInput);
-    		return appointmentPlanner.startPlanningNew(jsonArray);
+    		return travelTimeSorter.startPlanning(jsonArray);
     }
 	
 	@RequestMapping(value = "/v1/schedulingcare", method = RequestMethod.POST)
@@ -60,7 +67,7 @@ public class PlanningController {
     		@ApiParam(name="jsonObjectInput", value="JSON object with patients and carers informationen")
     		@RequestBody String jsonObjectInput) throws RoutingNotFoundException, InternalSchedulingErrorException {
     		JSONObject jsonObject = new JSONObject(jsonObjectInput);
-    		return appointmentPlanner.startPlanningCare(jsonObject);
+    		return nursePlanner.startPlanningCare(jsonObject);
     }
 	
 	@RequestMapping(value = "/v1/schedulingpickup", method = RequestMethod.POST)
@@ -74,7 +81,7 @@ public class PlanningController {
     		@ApiParam(name="jsonObjectInput", value="JSON object with pickup and dropoff locations")
     		@RequestBody String jsonObjectInput) throws RoutingNotFoundException, InternalSchedulingErrorException {
     		JSONObject jsonObject = new JSONObject(jsonObjectInput);
-    		return appointmentPlanner.startPlanningPickup(jsonObject);
+    		return pickupPlanner.startPlanningPickup(jsonObject);
     }
 	
 	@RequestMapping(value = "/v1/scheduling", method = RequestMethod.GET)
