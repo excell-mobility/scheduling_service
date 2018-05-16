@@ -398,13 +398,11 @@ public class NursePlanner {
 								afterIndex = act_index;
 								foundAfterAct = true;
 							}
-							
 						}
 						
 						if(foundAfterAct && foundBeforeAct && beforeIndex > afterIndex) {
 							return false;
 						}
-						
 					}
 				}
 				
@@ -501,6 +499,7 @@ public class NursePlanner {
 			else {
 				start = serviceJSON.has("startJob") ? serviceJSON.getInt("startJob") : 0;
 				end = serviceJSON.has("endJob") ? serviceJSON.getInt("endJob") : 0;
+				serviceTime = end - start;
 			}
 			services.add(new Service(serviceID, new GeoPoint(latitude, longitude), serviceTime, 
 					requiredSkills, start, end));
