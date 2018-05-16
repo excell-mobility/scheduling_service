@@ -38,8 +38,11 @@ public class PlanningController {
 	
 	@Autowired
 	private TravelTimeSorter travelTimeSorter;
+	@Autowired
 	private NursePlanner nursePlanner;
+	@Autowired
 	private PickupPlanner pickupPlanner;
+	@Autowired
 	private AppointmentPlanner appointmentPlanner;
 	
 	@RequestMapping(value = "/v1/schedulingnew", method = RequestMethod.POST)
