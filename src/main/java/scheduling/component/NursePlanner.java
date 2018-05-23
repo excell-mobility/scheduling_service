@@ -25,7 +25,6 @@ import com.graphhopper.jsprit.core.problem.constraint.HardActivityConstraint;
 import com.graphhopper.jsprit.core.problem.cost.VehicleRoutingTransportCosts;
 import com.graphhopper.jsprit.core.problem.job.Break;
 import com.graphhopper.jsprit.core.problem.job.Job;
-import com.graphhopper.jsprit.core.problem.misc.JobInsertionContext;
 import com.graphhopper.jsprit.core.problem.solution.VehicleRoutingProblemSolution;
 import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
 import com.graphhopper.jsprit.core.problem.solution.route.activity.TimeWindow;
@@ -36,10 +35,10 @@ import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
 import com.graphhopper.jsprit.core.util.Solutions;
 import com.graphhopper.jsprit.core.util.VehicleRoutingTransportCostsMatrix;
 
-import beans.BlacklistItem;
 import beans.GeoPoint;
-import beans.JobConstraint;
+import beans.JobOrderConstraint;
 import beans.JobProperties;
+import beans.JobVehicleConstraint;
 import beans.Service;
 import beans.Vehicle;
 import exceptions.InternalSchedulingErrorException;
@@ -76,21 +75,32 @@ public class NursePlanner {
 		}
 		
 		// extract job constraints
-		List<JobConstraint> jobConstraints = null;
+		List<JobOrderConstraint> jobOrderConstraints = null;
+		List<JobVehicleConstraint> jobVehicleConstraint = null;
 		if(jsonObject.has("constraints")) {
-			jobConstraints = Lists.newLinkedList();
+			jobOrderConstraints = Lists.newLinkedList();
+			jobVehicleConstraint = Lists.newLinkedList();
 			JSONArray jsonArray = jsonObject.getJSONArray("constraints");
 			for(int index = 0; index < jsonArray.length(); index++) {
 				JSONObject constraintJSON = jsonArray.getJSONObject(index);
-				String beforeJobId = constraintJSON.has("beforeJobId") ? constraintJSON.getString("beforeJobId") : "";
-				String afterJobId = constraintJSON.has("afterJobId") ? constraintJSON.getString("afterJobId") : "";
-				jobConstraints.add(new JobConstraint(beforeJobId, afterJobId));
+				// extract job order constraint
+				String beforeJobId = constraintJSON.has("beforeJobID") ? constraintJSON.getString("beforeJobID") : "";
+				String afterJobId = constraintJSON.has("afterJobID") ? constraintJSON.getString("afterJobID") : "";
+				if (!beforeJobId.equals("") && !afterJobId.equals(""))
+					jobOrderConstraints.add(new JobOrderConstraint(beforeJobId, afterJobId));
+				
+				// extract job vehicle constraints
+				String vehicleId = constraintJSON.has("vehicleID") ? constraintJSON.getString("vehicleID") : "";
+				String serviceId = constraintJSON.has("serviceID") ? constraintJSON.getString("serviceID") : "";
+				if (!vehicleId.equals("") && !serviceId.equals(""))
+					jobVehicleConstraint.add(new JobVehicleConstraint(vehicleId, serviceId));
 			}
 		}
-		final List<JobConstraint> jobConstraintsFinal = jobConstraints;
+		final List<JobOrderConstraint> jobOrderConstraintsFinal = jobOrderConstraints;
+		final List<JobVehicleConstraint> jobVehicleConstraintsFinal = jobVehicleConstraint;
 		
-		Set<String> nurseIdSet = Sets.newHashSet();
-		Set<String> patientIdSet = Sets.newHashSet();
+		Set<String> vehicleIdSet = Sets.newHashSet();
+		Set<String> serviceIdSet = Sets.newHashSet();
 		
 		// extract vehicles
 		List<Vehicle> vehicles = null;
@@ -101,7 +111,7 @@ public class NursePlanner {
 				List<String> skills = Lists.newLinkedList();
 				JSONObject vehicleJSON = jsonArray.getJSONObject(index);
 				String vehicleID = vehicleJSON.has("vehicleID") ? vehicleJSON.getString("vehicleID") : "";
-				nurseIdSet.add(vehicleID);
+				vehicleIdSet.add(vehicleID);
 				int earliestStart = vehicleJSON.has("earliestStart") ? vehicleJSON.getInt("earliestStart") : 0;
 				int latestArrival = vehicleJSON.has("latestArrival") ? vehicleJSON.getInt("latestArrival") : 0;
 				int breakStartWindow = 0;
@@ -128,20 +138,20 @@ public class NursePlanner {
 		List<Service> services = Lists.newLinkedList();
 		if(jsonObject.has("services")) {
 			JSONArray jsonArray = jsonObject.getJSONArray("services");
-			services.addAll(createServiceList(jsonArray, patientIdSet));
+			services.addAll(createServiceList(jsonArray, serviceIdSet));
 		}
 		
 		// extract blacklist
-		List<BlacklistItem> blacklist = null;
+		List<JobVehicleConstraint> blacklist = null;
 		if(jsonObject.has("blacklist")) {
 			blacklist = Lists.newLinkedList();
 			JSONArray jsonArray = jsonObject.getJSONArray("blacklist");
 			for(int index = 0; index < jsonArray.length(); index++) {
 				JSONObject blacklistItemJSON = jsonArray.getJSONObject(index);
-				String nurseId = blacklistItemJSON.has("nurseid") ? blacklistItemJSON.getString("nurseid") : "";
-				String patientId = blacklistItemJSON.has("patientid") ? blacklistItemJSON.getString("patientid") : "";
-				if(patientIdSet.contains(patientId) && nurseIdSet.contains(nurseId)) {
-					blacklist.add(new BlacklistItem(nurseId, patientId));
+				String vehicleId = blacklistItemJSON.has("vehicleID") ? blacklistItemJSON.getString("vehicleID") : "";
+				String serviceId = blacklistItemJSON.has("serviceID") ? blacklistItemJSON.getString("serviceID") : "";
+				if(serviceIdSet.contains(serviceId) && vehicleIdSet.contains(vehicleId)) {
+					blacklist.add(new JobVehicleConstraint(vehicleId, serviceId));
 				}
 			}
 		}
@@ -150,20 +160,20 @@ public class NursePlanner {
 		if(blacklist != null && blacklist.size() > 0) {
 			
 			for(Service service: services) {
-				for(BlacklistItem blacklistItem: blacklist) {
-					if(service.getServiceID().equals(blacklistItem.getPatientId())) {
+				for(JobVehicleConstraint blacklistItem: blacklist) {
+					if(service.getServiceID().equals(blacklistItem.getServiceId())) {
 						List<String> requiredSkills = service.getRequiredSkills();
-						requiredSkills = updateSkills(requiredSkills, blacklistItem.getPatientId());
+						requiredSkills = updateSkills(requiredSkills, blacklistItem.getServiceId());
 						service.setRequiredSkills(requiredSkills);
 					}
 				}
 			}
 			
 			for(Vehicle vehicle: vehicles) {
-				for(BlacklistItem blacklistItem: blacklist) {
-					if(!vehicle.getVehicleID().equals(blacklistItem.getNurseId())) {
+				for(JobVehicleConstraint blacklistItem: blacklist) {
+					if(!vehicle.getVehicleID().equals(blacklistItem.getVehicleId())) {
 						List<String> skills = vehicle.getSkills();
-						skills = updateSkills(skills, blacklistItem.getPatientId());
+						skills = updateSkills(skills, blacklistItem.getServiceId());
 						vehicle.setSkills(skills);
 					}
 				}
@@ -182,7 +192,7 @@ public class NursePlanner {
     			if (currentPlanning.has(vehicle.getVehicleID())) {
     				
 		        	JSONArray plannedJobs = currentPlanning.getJSONArray(vehicle.getVehicleID());
-		        	plannedServices.addAll(createServiceList(plannedJobs, patientIdSet));
+		        	plannedServices.addAll(createServiceList(plannedJobs, serviceIdSet));
 		        	
     			}
     		}
@@ -315,103 +325,11 @@ public class NursePlanner {
         StateManager stateManager = new StateManager(problem);
         ConstraintManager constraintManager = new ConstraintManager(problem, stateManager);
         
-		HardActivityConstraint hardActivityConstraint = new HardActivityConstraint() {
-			
-			@Override
-			public ConstraintsStatus fulfilled(JobInsertionContext iFacts,
-					TourActivity prevAct, TourActivity newAct,
-					TourActivity nextAct, double prevActDepTime) {
-				
-				if(jobConstraintsFinal != null && jobConstraintsFinal.size() > 0) {
-					
-					List<TourActivity> activities = iFacts.getRoute().getActivities();
-					
-					for(int const_index = 0; const_index < jobConstraintsFinal.size(); const_index++) {
-						
-						String idBefore = jobConstraintsFinal.get(const_index).getBeforeJobId();
-						String idAfter = jobConstraintsFinal.get(const_index).getAfterJobId();
-						int beforeIndex = 0;
-						int afterIndex = 0;
-						boolean foundBeforeAct = false;
-						boolean foundAfterAct = false;
-						
-						for(int act_index = 0; act_index < activities.size(); act_index++) {
-							
-							TourActivity tourActivity = activities.get(act_index);
-							
-							if(tourActivity.getLocation().getId().equals(idBefore) 
-									&& tourActivity.getName().equals("service")) {
-								beforeIndex = act_index;
-								foundBeforeAct = true;
-							}
-							if(tourActivity.getLocation().getId().equals(idAfter)
-									&& tourActivity.getName().equals("service")) {
-								afterIndex = act_index;
-								foundAfterAct = true;
-							}
-							
-						}
-						
-						if(foundAfterAct && foundBeforeAct 
-								&& beforeIndex < afterIndex
-								&& otherConstraintsDoNotFail(activities, const_index, jobConstraintsFinal)) {
-							return ConstraintsStatus.FULFILLED;
-						}
-						if(foundAfterAct && foundBeforeAct && beforeIndex > afterIndex) {
-							return ConstraintsStatus.NOT_FULFILLED;
-						}
-						
-					}
-					
-				}
-				
-				return ConstraintsStatus.FULFILLED;
-				
-			}
-
-			private boolean otherConstraintsDoNotFail(List<TourActivity> activities, 
-					int index, List<JobConstraint> jobConstraintsFinal) {
-				
-				if(index >= jobConstraintsFinal.size()) {
-					return true;
-				} else {
-					for(int i = index; i < jobConstraintsFinal.size(); i++) {
-						
-						String idBefore = jobConstraintsFinal.get(i).getBeforeJobId();
-						String idAfter = jobConstraintsFinal.get(i).getAfterJobId();
-						int beforeIndex = 0;
-						int afterIndex = 0;
-						boolean foundBeforeAct = false;
-						boolean foundAfterAct = false;
-						
-						for(int act_index = 0; act_index < activities.size(); act_index++) {
-							
-							TourActivity tourActivity = activities.get(act_index);
-							
-							if(tourActivity.getLocation().getId().equals(idBefore) 
-									&& tourActivity.getName().equals("service")) {
-								beforeIndex = act_index;
-								foundBeforeAct = true;
-							}
-							if(tourActivity.getLocation().getId().equals(idAfter)
-									&& tourActivity.getName().equals("service")) {
-								afterIndex = act_index;
-								foundAfterAct = true;
-							}
-						}
-						
-						if(foundAfterAct && foundBeforeAct && beforeIndex > afterIndex) {
-							return false;
-						}
-					}
-				}
-				
-				return true;
-			}
-
-		}; 
+		HardActivityConstraint jobOrderActivityConstraint = new JobOrderActivityConstraint(jobOrderConstraintsFinal);
+		constraintManager.addConstraint(jobOrderActivityConstraint, Priority.CRITICAL);
 		
-		constraintManager.addConstraint(hardActivityConstraint, Priority.CRITICAL);
+		HardActivityConstraint jobVehicleActivityConstraint = new JobVehicleActivityConstraint(jobVehicleConstraintsFinal);
+		constraintManager.addConstraint(jobVehicleActivityConstraint, Priority.HIGH);
 
 		/*
          * get the algorithm out-of-the-box.
