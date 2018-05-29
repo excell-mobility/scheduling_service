@@ -18,6 +18,7 @@ import com.graphhopper.jsprit.core.algorithm.VehicleRoutingAlgorithm;
 import com.graphhopper.jsprit.core.algorithm.box.Jsprit;
 import com.graphhopper.jsprit.core.algorithm.state.StateManager;
 import com.graphhopper.jsprit.core.problem.Location;
+import com.graphhopper.jsprit.core.problem.Skills;
 import com.graphhopper.jsprit.core.problem.VehicleRoutingProblem;
 import com.graphhopper.jsprit.core.problem.constraint.ConstraintManager;
 import com.graphhopper.jsprit.core.problem.constraint.ConstraintManager.Priority;
@@ -33,12 +34,12 @@ import com.graphhopper.jsprit.core.problem.vehicle.VehicleImpl.Builder;
 import com.graphhopper.jsprit.core.problem.vehicle.VehicleType;
 import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
 import com.graphhopper.jsprit.core.util.Solutions;
+import com.graphhopper.jsprit.core.util.UnassignedJobReasonTracker;
 import com.graphhopper.jsprit.core.util.VehicleRoutingTransportCostsMatrix;
 
 import beans.GeoPoint;
-import beans.JobOrderConstraint;
-import beans.JobProperties;
-import beans.JobVehicleConstraint;
+import beans.ServiceOrderConstraint;
+import beans.ServiceVehicleConstraint;
 import beans.Service;
 import beans.Vehicle;
 import exceptions.InternalSchedulingErrorException;
@@ -75,29 +76,29 @@ public class NursePlanner {
 		}
 		
 		// extract job constraints
-		List<JobOrderConstraint> jobOrderConstraints = null;
-		List<JobVehicleConstraint> jobVehicleConstraint = null;
+		List<ServiceOrderConstraint> serviceOrderConstraints = null;
+		List<ServiceVehicleConstraint> serviceVehicleConstraint = null;
 		if(jsonObject.has("constraints")) {
-			jobOrderConstraints = Lists.newLinkedList();
-			jobVehicleConstraint = Lists.newLinkedList();
+			serviceOrderConstraints = Lists.newLinkedList();
+			serviceVehicleConstraint = Lists.newLinkedList();
 			JSONArray jsonArray = jsonObject.getJSONArray("constraints");
 			for(int index = 0; index < jsonArray.length(); index++) {
 				JSONObject constraintJSON = jsonArray.getJSONObject(index);
 				// extract job order constraint
-				String beforeJobId = constraintJSON.has("beforeJobID") ? constraintJSON.getString("beforeJobID") : "";
-				String afterJobId = constraintJSON.has("afterJobID") ? constraintJSON.getString("afterJobID") : "";
+				String beforeJobId = constraintJSON.has("beforeServiceID") ? constraintJSON.getString("beforeServiceID") : "";
+				String afterJobId = constraintJSON.has("afterServiceID") ? constraintJSON.getString("afterServiceID") : "";
 				if (!beforeJobId.equals("") && !afterJobId.equals(""))
-					jobOrderConstraints.add(new JobOrderConstraint(beforeJobId, afterJobId));
+					serviceOrderConstraints.add(new ServiceOrderConstraint(beforeJobId, afterJobId));
 				
 				// extract job vehicle constraints
-				String vehicleId = constraintJSON.has("vehicleID") ? constraintJSON.getString("vehicleID") : "";
 				String serviceId = constraintJSON.has("serviceID") ? constraintJSON.getString("serviceID") : "";
+				String vehicleId = constraintJSON.has("vehicleID") ? constraintJSON.getString("vehicleID") : "";
 				if (!vehicleId.equals("") && !serviceId.equals(""))
-					jobVehicleConstraint.add(new JobVehicleConstraint(vehicleId, serviceId));
+					serviceVehicleConstraint.add(new ServiceVehicleConstraint(serviceId, vehicleId));
 			}
 		}
-		final List<JobOrderConstraint> jobOrderConstraintsFinal = jobOrderConstraints;
-		final List<JobVehicleConstraint> jobVehicleConstraintsFinal = jobVehicleConstraint;
+		final List<ServiceOrderConstraint> serviceOrderConstraintsFinal = serviceOrderConstraints;
+		final List<ServiceVehicleConstraint> serviceVehicleConstraintsFinal = serviceVehicleConstraint;
 		
 		Set<String> vehicleIdSet = Sets.newHashSet();
 		Set<String> serviceIdSet = Sets.newHashSet();
@@ -142,7 +143,7 @@ public class NursePlanner {
 		}
 		
 		// extract blacklist
-		List<JobVehicleConstraint> blacklist = null;
+		List<ServiceVehicleConstraint> blacklist = null;
 		if(jsonObject.has("blacklist")) {
 			blacklist = Lists.newLinkedList();
 			JSONArray jsonArray = jsonObject.getJSONArray("blacklist");
@@ -151,7 +152,7 @@ public class NursePlanner {
 				String vehicleId = blacklistItemJSON.has("vehicleID") ? blacklistItemJSON.getString("vehicleID") : "";
 				String serviceId = blacklistItemJSON.has("serviceID") ? blacklistItemJSON.getString("serviceID") : "";
 				if(serviceIdSet.contains(serviceId) && vehicleIdSet.contains(vehicleId)) {
-					blacklist.add(new JobVehicleConstraint(vehicleId, serviceId));
+					blacklist.add(new ServiceVehicleConstraint(vehicleId, serviceId));
 				}
 			}
 		}
@@ -160,7 +161,7 @@ public class NursePlanner {
 		if(blacklist != null && blacklist.size() > 0) {
 			
 			for(Service service: services) {
-				for(JobVehicleConstraint blacklistItem: blacklist) {
+				for(ServiceVehicleConstraint blacklistItem: blacklist) {
 					if(service.getServiceID().equals(blacklistItem.getServiceId())) {
 						List<String> requiredSkills = service.getRequiredSkills();
 						requiredSkills = updateSkills(requiredSkills, blacklistItem.getServiceId());
@@ -170,7 +171,7 @@ public class NursePlanner {
 			}
 			
 			for(Vehicle vehicle: vehicles) {
-				for(JobVehicleConstraint blacklistItem: blacklist) {
+				for(ServiceVehicleConstraint blacklistItem: blacklist) {
 					if(!vehicle.getVehicleID().equals(blacklistItem.getVehicleId())) {
 						List<String> skills = vehicle.getSkills();
 						skills = updateSkills(skills, blacklistItem.getServiceId());
@@ -325,55 +326,69 @@ public class NursePlanner {
         StateManager stateManager = new StateManager(problem);
         ConstraintManager constraintManager = new ConstraintManager(problem, stateManager);
         
-		HardActivityConstraint jobOrderActivityConstraint = new JobOrderActivityConstraint(jobOrderConstraintsFinal);
+		HardActivityConstraint jobOrderActivityConstraint = new ServiceOrderActivityConstraint(serviceOrderConstraintsFinal);
 		constraintManager.addConstraint(jobOrderActivityConstraint, Priority.CRITICAL);
 		
-		HardActivityConstraint jobVehicleActivityConstraint = new JobVehicleActivityConstraint(jobVehicleConstraintsFinal);
+		HardActivityConstraint jobVehicleActivityConstraint = new ServiceVehicleActivityConstraint(serviceVehicleConstraintsFinal);
 		constraintManager.addConstraint(jobVehicleActivityConstraint, Priority.HIGH);
-
-		/*
-         * get the algorithm out-of-the-box.
-		 */
 		
+		// build the algorithm
 		VehicleRoutingAlgorithm algorithm = Jsprit.Builder.newInstance(problem)
 	            .setStateAndConstraintManager(stateManager,constraintManager)
 	            .addCoreStateAndConstraintStuff(true)
 	            .buildAlgorithm();
 
-		/*
-         * and search a solution
-		 */
+		UnassignedJobReasonTracker reasonTracker = new UnassignedJobReasonTracker();
+		algorithm.addListener(reasonTracker);
+		
+		// retrieve solutions and choose best
         Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
-
-		/*
-         * get the best
-		 */
         VehicleRoutingProblemSolution bestSolution = Solutions.bestOf(solutions);
         Collection<VehicleRoute> routes = bestSolution.getRoutes();
+        // SolutionPrinter.print(problem, bestSolution, SolutionPrinter.Print.VERBOSE);
         
-//        SolutionPrinter.print(problem, bestSolution, SolutionPrinter.Print.VERBOSE);
-        
-		org.json.simple.JSONObject obj = new org.json.simple.JSONObject();
 		// create map with optimized tour
-		Map<String, List<JobProperties>> result = Maps.newHashMap();
+		org.json.simple.JSONObject obj = new org.json.simple.JSONObject();
+		Map<String, List<Service>> result = Maps.newHashMap();
         for(VehicleRoute route: routes) {
-        	List<JobProperties> jobList = Lists.newLinkedList();
+        	List<Service> jobList = Lists.newLinkedList();
         	for(TourActivity act : route.getActivities()) {
         		Job job = ((TourActivity.JobActivity) act).getJob();
-				String jobId = job.getId();
-        		jobList.add(new JobProperties(jobId, 
+				String serviceID = job.getId();
+				List<String> requiredSkills = Lists.newLinkedList();
+				requiredSkills.addAll(job.getRequiredSkills().values());
+				GeoPoint serviceLocation = null;
+				for (Service service : allServices) {
+					if (service.getServiceID().equals(serviceID))
+						serviceLocation = service.getLocation();
+				}
+				
+        		jobList.add(new Service(serviceID,
+        				serviceLocation,
+        				Math.round(act.getOperationTime()),
+        				requiredSkills,
         				Math.round(act.getArrTime()), 
-        				Math.round(act.getEndTime()),
-        				Math.round(act.getOperationTime())
+        				Math.round(act.getEndTime())
         				));
         	}
         	
         	result.put(route.getVehicle().getId(), jobList);
         }
-		
         obj.putAll(result);
+        
+        // add unassigned jobs to result
+        Collection<Job> unassignedJobs = bestSolution.getUnassignedJobs();
+        List<org.json.simple.JSONObject> openJobs = Lists.newLinkedList();
+        for (Job unassignedJob : unassignedJobs) {
+        	org.json.simple.JSONObject openJob = new org.json.simple.JSONObject();
+        	openJob.put("serviceID", unassignedJob.getId());
+        	openJob.put("reason", reasonTracker.getMostLikelyReason(unassignedJob.getId()));
+        	openJobs.add(openJob);
+        }
+        
+        obj.put("unassigned", openJobs);
+        
 		return obj;
-		
 	}
 
 	private List<Service> createServiceList(JSONArray jsonArray, Set<String> patientIdSet) {
@@ -385,12 +400,8 @@ public class NursePlanner {
 			String serviceID = null;
 			if (serviceJSON.has("serviceID"))
 				serviceID = serviceJSON.getString("serviceID");
-			else {
-				if (serviceJSON.has("jobID"))
-					serviceID = serviceJSON.getString("jobID");
-				else
-					serviceID = "";
-			}
+			else
+				serviceID = "";
 			
 			patientIdSet.add(serviceID);
 			int serviceTime = serviceJSON.has("serviceTime") ? serviceJSON.getInt("serviceTime") : 0;
@@ -415,8 +426,8 @@ public class NursePlanner {
 				end = timeJSON.has("end") ? timeJSON.getInt("end") : 0;
 			}
 			else {
-				start = serviceJSON.has("startJob") ? serviceJSON.getInt("startJob") : 0;
-				end = serviceJSON.has("endJob") ? serviceJSON.getInt("endJob") : 0;
+				start = serviceJSON.has("start") ? serviceJSON.getInt("start") : 0;
+				end = serviceJSON.has("end") ? serviceJSON.getInt("end") : 0;
 				serviceTime = end - start;
 			}
 			services.add(new Service(serviceID, new GeoPoint(latitude, longitude), serviceTime, 
@@ -453,7 +464,7 @@ public class NursePlanner {
 					serviceInstance.addRequiredSkill(skill);
 				}
 			}
-		serviceInstance.addTimeWindow(service.getStartWindow(),service.getEndWindow());
+		serviceInstance.addTimeWindow(service.getStart(), service.getEnd());
 		serviceInstance.setServiceTime(service.getServiceTime());
 		serviceInstance.setName(service.getServiceID());
     	

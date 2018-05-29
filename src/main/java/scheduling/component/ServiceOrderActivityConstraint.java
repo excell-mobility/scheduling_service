@@ -6,14 +6,14 @@ import com.graphhopper.jsprit.core.problem.constraint.HardActivityConstraint;
 import com.graphhopper.jsprit.core.problem.misc.JobInsertionContext;
 import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity;
 
-import beans.JobOrderConstraint;
+import beans.ServiceOrderConstraint;
 
-public class JobOrderActivityConstraint implements HardActivityConstraint {
+public class ServiceOrderActivityConstraint implements HardActivityConstraint {
 
-	private List<JobOrderConstraint> jobOrderConstraints;
+	private List<ServiceOrderConstraint> serviceOrderConstraint;
 	
-	public JobOrderActivityConstraint(List<JobOrderConstraint> jobOrderConstraints) {
-		this.jobOrderConstraints = jobOrderConstraints;
+	public ServiceOrderActivityConstraint(List<ServiceOrderConstraint> serviceOrderConstraint) {
+		this.serviceOrderConstraint = serviceOrderConstraint;
 	}
 	
 	@Override
@@ -21,14 +21,14 @@ public class JobOrderActivityConstraint implements HardActivityConstraint {
 			TourActivity prevAct, TourActivity newAct,
 			TourActivity nextAct, double prevActDepTime) {
 		
-		if(jobOrderConstraints != null && jobOrderConstraints.size() > 0) {
+		if(serviceOrderConstraint != null && serviceOrderConstraint.size() > 0) {
 			
 			List<TourActivity> activities = iFacts.getRoute().getActivities();
 			
-			for(int const_index = 0; const_index < jobOrderConstraints.size(); const_index++) {
+			for(int const_index = 0; const_index < serviceOrderConstraint.size(); const_index++) {
 				
-				String idBefore = jobOrderConstraints.get(const_index).getBeforeJobId();
-				String idAfter = jobOrderConstraints.get(const_index).getAfterJobId();
+				String idBefore = serviceOrderConstraint.get(const_index).getBeforeServiceID();
+				String idAfter = serviceOrderConstraint.get(const_index).getAfterServiceID();
 				int beforeIndex = 0;
 				int afterIndex = 0;
 				boolean foundBeforeAct = false;
@@ -53,7 +53,7 @@ public class JobOrderActivityConstraint implements HardActivityConstraint {
 				
 				if(foundAfterAct && foundBeforeAct 
 						&& beforeIndex < afterIndex
-						&& otherConstraintsDoNotFail(activities, const_index, jobOrderConstraints)) {
+						&& otherConstraintsDoNotFail(activities, const_index, serviceOrderConstraint)) {
 					return ConstraintsStatus.FULFILLED;
 				}
 				if(foundAfterAct && foundBeforeAct && beforeIndex > afterIndex) {
@@ -68,15 +68,15 @@ public class JobOrderActivityConstraint implements HardActivityConstraint {
 	}
 
 	private boolean otherConstraintsDoNotFail(List<TourActivity> activities, 
-			int index, List<JobOrderConstraint> jobConstraintsFinal) {
+			int index, List<ServiceOrderConstraint> jobConstraintsFinal) {
 		
 		if(index >= jobConstraintsFinal.size()) {
 			return true;
 		} else {
 			for(int i = index; i < jobConstraintsFinal.size(); i++) {
 				
-				String idBefore = jobConstraintsFinal.get(i).getBeforeJobId();
-				String idAfter = jobConstraintsFinal.get(i).getAfterJobId();
+				String idBefore = jobConstraintsFinal.get(i).getBeforeServiceID();
+				String idAfter = jobConstraintsFinal.get(i).getAfterServiceID();
 				int beforeIndex = 0;
 				int afterIndex = 0;
 				boolean foundBeforeAct = false;
