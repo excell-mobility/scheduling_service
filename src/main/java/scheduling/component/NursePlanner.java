@@ -38,9 +38,9 @@ import com.graphhopper.jsprit.core.util.UnassignedJobReasonTracker;
 import com.graphhopper.jsprit.core.util.VehicleRoutingTransportCostsMatrix;
 
 import beans.GeoPoint;
+import beans.Service;
 import beans.ServiceOrderConstraint;
 import beans.ServiceVehicleConstraint;
-import beans.Service;
 import beans.Vehicle;
 import exceptions.InternalSchedulingErrorException;
 import exceptions.RoutingNotFoundException;
@@ -363,12 +363,15 @@ public class NursePlanner {
 						serviceLocation = service.getLocation();
 				}
 				
-        		jobList.add(new Service(serviceID,
+        		jobList.add(new Service(
+        				serviceID,
+        				new beans.TimeWindow(
+        						Math.toIntExact(Math.round(act.getArrTime())), 
+        						Math.toIntExact(Math.round(act.getEndTime()))
+                				),
+        				Math.toIntExact(Math.round(act.getOperationTime())),
         				serviceLocation,
-        				Math.round(act.getOperationTime()),
-        				requiredSkills,
-        				Math.round(act.getArrTime()), 
-        				Math.round(act.getEndTime())
+        				requiredSkills
         				));
         	}
         	
@@ -424,14 +427,18 @@ public class NursePlanner {
 				JSONObject timeJSON = serviceJSON.getJSONObject("timeWindow");
 				start = timeJSON.has("start") ? timeJSON.getInt("start") : 0;
 				end = timeJSON.has("end") ? timeJSON.getInt("end") : 0;
+			
+				if (serviceTime == 0) 
+					serviceTime = end - start;
 			}
-			else {
-				start = serviceJSON.has("start") ? serviceJSON.getInt("start") : 0;
-				end = serviceJSON.has("end") ? serviceJSON.getInt("end") : 0;
-				serviceTime = end - start;
-			}
-			services.add(new Service(serviceID, new GeoPoint(latitude, longitude), serviceTime, 
-					requiredSkills, start, end));
+			
+			services.add(new Service(
+					serviceID,
+					new beans.TimeWindow(start, end),
+					serviceTime, 
+					new GeoPoint(latitude, longitude),
+					requiredSkills
+				));
 		}		
 		
 		return services;
@@ -464,7 +471,7 @@ public class NursePlanner {
 					serviceInstance.addRequiredSkill(skill);
 				}
 			}
-		serviceInstance.addTimeWindow(service.getStart(), service.getEnd());
+		serviceInstance.addTimeWindow(service.getTimeWindow().getStart(), service.getTimeWindow().getEnd());
 		serviceInstance.setServiceTime(service.getServiceTime());
 		serviceInstance.setName(service.getServiceID());
     	
