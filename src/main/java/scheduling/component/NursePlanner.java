@@ -182,19 +182,20 @@ public class NursePlanner {
 			
 		}
 
+		// prepare one list with all services for cost matrix
+		List<Service> allServices = Lists.newLinkedList();
+		allServices.addAll(services);
+		
 		// extract services already planned
-		List<Service> plannedServices = Lists.newLinkedList();
-		JSONObject currentPlanning = null;
+		Map<String, List<Service>> currentPlanningMap = Maps.newHashMap();
         if(jsonObject.has("currentPlanning")) {
-        	currentPlanning = jsonObject.getJSONObject("currentPlanning");
-        	
+        	JSONObject currentPlanning = jsonObject.getJSONObject("currentPlanning");
     		for (Vehicle vehicle : vehicles) {
-        	
     			if (currentPlanning.has(vehicle.getVehicleID())) {
-    				
 		        	JSONArray plannedJobs = currentPlanning.getJSONArray(vehicle.getVehicleID());
-		        	plannedServices.addAll(createServiceList(plannedJobs, serviceIdSet));
-		        	
+		        	List<Service> plannedServices = createServiceList(plannedJobs, serviceIdSet);
+		        	currentPlanningMap.put(vehicle.getVehicleID(), plannedServices);
+		    		allServices.addAll(plannedServices);
     			}
     		}
         }
@@ -202,9 +203,6 @@ public class NursePlanner {
 		VehicleRoutingTransportCostsMatrix.Builder costMatrixBuilder = VehicleRoutingTransportCostsMatrix.Builder.newInstance(true);
 		
 		// calculate the same distance and time between the starting point and all patients
-		List<Service> allServices = Lists.newLinkedList();
-		allServices.addAll(services);
-		allServices.addAll(plannedServices);
     	for(Service service: allServices) {
     		
     		double travelDistance = 0.0;
@@ -303,16 +301,13 @@ public class NursePlanner {
         	vrpBuilder.addJob(buildService(service));
 
         // prepare initial services for VRP if exist
-        if (currentPlanning != null) {
-			for (com.graphhopper.jsprit.core.problem.vehicle.Vehicle vehicle : vrpBuilder.getAddedVehicles()) {
-				if (currentPlanning.has(vehicle.getId())) {
+        if (!currentPlanningMap.isEmpty()) {
+        	for (com.graphhopper.jsprit.core.problem.vehicle.Vehicle vehicle : vrpBuilder.getAddedVehicles()) {
+				if (currentPlanningMap.containsKey(vehicle.getId())) {
 	    			VehicleRoute.Builder initialRoute = VehicleRoute.Builder.newInstance(vehicle);
-	
-		        	for (Service plannedService : plannedServices) {
-		        		com.graphhopper.jsprit.core.problem.job.Service service = buildService(plannedService);
-		        		vrpBuilder.addJob(service);
-		                initialRoute.addService(service);		                
-		            }
+	    			
+		        	for (Service plannedService : currentPlanningMap.get(vehicle.getId()))
+		                initialRoute.addService(buildService(plannedService));
 		        	
 		        	vrpBuilder.addInitialVehicleRoute(initialRoute.build());
 				}
