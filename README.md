@@ -2,12 +2,16 @@
 
 The Scheduling API is designed to optimize the route of a trip with multiple stops. It offers two endpoints which follow different purposes:
 schedulingnew finds the best fit for a new appointment into a given schedule of existing appointments (JSON array).
-schedulingcare plans the complete schedules for multiple cars. Therefore, it requires a detailed description (JSON) about different client constraints. The service acts as a wrapper for [jspirit](https://github.com/graphhopper/jsprit) by Graphhopper.
+schedulingcare plans the complete schedules for multiple cars. Therefore, it requires a detailed description (JSON) about different client constraints. The service acts as a wrapper for [jsprit](https://github.com/graphhopper/jsprit) by Graphhopper.
 
 
 ## Setup
 
 This web service comes as a [SpringBoot](https://projects.spring.io/spring-boot/) application so it's very easy to test it on your local machine. If you run the service from inside a Java IDE a Tomcat server will be launched and you can access the service through a browser via localhost:44434.
+
+### Application properties
+
+Internally, the Scheduling Service calls the [ExCELL Routing API](https://github.com/excell-mobility/routing_service) and includes its results into the appointment planning. The user can set up his/her own Routing Service or use the online version on the [ExCELL Developer Portal](https://www.excell-mobility.de/developer/docs.php?service=routing_service). The parameter `url.routingservice` in the `application.properties` defines which endpoint is used. The URL of th eonline API is the default setting but it requires a user login which can be configured in the `application.properties` as well. If user authentification is not required change the parameter of `url.routingservice.auth` to `false`.
 
 ### Build it
 
@@ -23,9 +27,9 @@ On your local machine run the JAR with:
 
 <pre>java -jar tourenplanung-0.0.1-SNAPSHOT.jar</pre>
 
-On a remote machine use it is necessary to specify the location of the OSM file and routing graph directory. You might also want to change the server port
+You might also want to change the server port or the URL to the routing service
 
-<pre>java -jar tourenplanung-0.0.1-SNAPSHOT.jar --server.port=44444</pre>
+<pre>java -jar tourenplanung-0.0.1-SNAPSHOT.jar --server.port=44444 --url.routingservice=http://localhost:43434</pre>
 
 
 ## API Doc
