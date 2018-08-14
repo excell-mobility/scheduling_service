@@ -44,6 +44,7 @@ An online version of the scheduling API is available on the ExCELL Developer Por
 
 * Stephan Piper (BHS)
 * Felix Kunde (BHS)
+* Oguzhan Uyar (BHS)
 * Maximilian Allies (BHS)
 
 
