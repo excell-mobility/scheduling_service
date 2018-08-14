@@ -6,8 +6,7 @@ import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Lists;
@@ -31,20 +30,19 @@ import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
 import com.graphhopper.jsprit.core.util.Solutions;
 import com.graphhopper.jsprit.core.util.VehicleRoutingTransportCostsMatrix;
 
-import beans.GeoPoint;
-import beans.TransportProperties;
-import exceptions.InternalSchedulingErrorException;
-import exceptions.RoutingNotFoundException;
-import rest.RoutingConnector;
+import scheduling.beans.GeoPoint;
+import scheduling.beans.TransportProperties;
+import scheduling.connector.RoutingConnector;
+import scheduling.exceptions.InternalSchedulingErrorException;
+import scheduling.exceptions.RoutingNotFoundException;
 
 @Component
 public class PickupPlanner {
 	
-	private final Logger log;
+	@Autowired
 	private final RoutingConnector routingConnector;
 
 	public PickupPlanner() {
-	    this.log = LoggerFactory.getLogger(this.getClass());
 		this.routingConnector = new RoutingConnector();
 	}
 	

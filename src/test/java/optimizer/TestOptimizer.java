@@ -13,9 +13,9 @@ import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
-import beans.CalendarAppointment;
-import beans.GeoPoint;
-import beans.WorkingDay;
+import scheduling.beans.CalendarAppointment;
+import scheduling.beans.GeoPoint;
+import scheduling.beans.WorkingDay;
 //import rest.RoutingConnector;
 import scheduling.component.TourOptimizer;
 import scheduling.model.PlanningResponse;

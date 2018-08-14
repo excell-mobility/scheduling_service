@@ -17,10 +17,11 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-//import beans.GeoPoint;
-//import rest.RoutingConnector;
-import scheduling.component.AppointmentPlanner;
-//import scheduling.component.TourOptimizer;
+import scheduling.component.NursePlanner;
+import scheduling.component.PickupPlanner;
+import scheduling.component.TourOptimizer;
+import scheduling.component.TravelTimeSorter;
+import scheduling.connector.RoutingConnector;
 import scheduling.controller.PlanningController;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
@@ -42,7 +43,11 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
 @EnableSwagger2
 @ComponentScan(basePackageClasses = {
 	    PlanningController.class,
-	    AppointmentPlanner.class
+	    NursePlanner.class,
+	    PickupPlanner.class,
+	    TourOptimizer.class,
+	    TravelTimeSorter.class,
+	    RoutingConnector.class
 	})
 public class Application {
 

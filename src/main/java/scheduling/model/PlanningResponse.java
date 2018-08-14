@@ -12,7 +12,6 @@ public class PlanningResponse implements Comparable<PlanningResponse> {
 	private double travelDistance;
 	private Date startDate;
 	private Date endDate;
-//	private Timeslot timeslot;
 	private String calendarId;
 	
 	// dummy constructor
@@ -23,14 +22,12 @@ public class PlanningResponse implements Comparable<PlanningResponse> {
 	public PlanningResponse(int travelTime, 
 			double travelDistance, 
 			Date startDate, 
-			Date endDate,
-			//Timeslot timeslot, 
+			Date endDate, 
 			String calendarId) {
 		this.setTravelTime(travelTime);
 		this.setTravelDistance(travelDistance);
 		this.startDate = startDate;
 		this.endDate = endDate;
-//		this.setTimeslot(timeslot);
 		this.setCalendarId(calendarId);
 	}
 
@@ -67,15 +64,7 @@ public class PlanningResponse implements Comparable<PlanningResponse> {
 	public void setEndDate(Date endDate) {
 		this.endDate = endDate;
 	}
-/*
-	public Timeslot getTimeslot() {
-		return timeslot;
-	}
 
-	public void setTimeslot(Timeslot timeslot) {
-		this.timeslot = timeslot;
-	}
-*/
 	public String getCalendarId() {
 		return calendarId;
 	}

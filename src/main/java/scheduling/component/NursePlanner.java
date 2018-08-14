@@ -9,6 +9,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.Lists;
@@ -18,7 +19,6 @@ import com.graphhopper.jsprit.core.algorithm.VehicleRoutingAlgorithm;
 import com.graphhopper.jsprit.core.algorithm.box.Jsprit;
 import com.graphhopper.jsprit.core.algorithm.state.StateManager;
 import com.graphhopper.jsprit.core.problem.Location;
-import com.graphhopper.jsprit.core.problem.Skills;
 import com.graphhopper.jsprit.core.problem.VehicleRoutingProblem;
 import com.graphhopper.jsprit.core.problem.constraint.ConstraintManager;
 import com.graphhopper.jsprit.core.problem.constraint.ConstraintManager.Priority;
@@ -37,21 +37,23 @@ import com.graphhopper.jsprit.core.util.Solutions;
 import com.graphhopper.jsprit.core.util.UnassignedJobReasonTracker;
 import com.graphhopper.jsprit.core.util.VehicleRoutingTransportCostsMatrix;
 
-import beans.GeoPoint;
-import beans.Service;
-import beans.ServiceOrderConstraint;
-import beans.ServiceVehicleConstraint;
-import beans.Vehicle;
-import exceptions.InternalSchedulingErrorException;
-import exceptions.RoutingNotFoundException;
-import rest.RoutingConnector;
+import scheduling.beans.GeoPoint;
+import scheduling.beans.Service;
+import scheduling.beans.ServiceOrderConstraint;
+import scheduling.beans.ServiceVehicleConstraint;
+import scheduling.beans.Vehicle;
+import scheduling.connector.RoutingConnector;
+import scheduling.exceptions.InternalSchedulingErrorException;
+import scheduling.exceptions.RoutingNotFoundException;
 
 @Component
 public class NursePlanner {
 	
-	private final Logger log;
+	@Autowired
 	private final RoutingConnector routingConnector;
-
+	
+	private final Logger log;
+	
 	public NursePlanner() {
 	    this.log = LoggerFactory.getLogger(this.getClass());
 		this.routingConnector = new RoutingConnector();
@@ -360,7 +362,7 @@ public class NursePlanner {
 				
         		jobList.add(new Service(
         				serviceID,
-        				new beans.TimeWindow(
+        				new scheduling.beans.TimeWindow(
         						Math.toIntExact(Math.round(act.getArrTime())), 
         						Math.toIntExact(Math.round(act.getEndTime()))
                 				),
@@ -429,7 +431,7 @@ public class NursePlanner {
 			
 			services.add(new Service(
 					serviceID,
-					new beans.TimeWindow(start, end),
+					new scheduling.beans.TimeWindow(start, end),
 					serviceTime, 
 					new GeoPoint(latitude, longitude),
 					requiredSkills

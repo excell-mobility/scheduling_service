@@ -72,38 +72,29 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/com.graphhopper/jsprit-core -->
     <dependency>
-    	<groupId>excell</groupId>
-    	<artifactId>excellapis</artifactId>
-    	  <version>0.0.1-SNAPSHOT</version>
+        <groupId>com.graphhopper</groupId>
+        <artifactId>jsprit-core</artifactId>
+        <version>1.7.2</version>
     </dependency>
-        <!-- https://mvnrepository.com/artifact/com.graphhopper/jsprit-core -->
-<dependency>
-    <groupId>com.graphhopper</groupId>
-    <artifactId>jsprit-core</artifactId>
-    <version>1.7.2</version>
-</dependency>
-
-<!-- https://mvnrepository.com/artifact/com.graphhopper/jsprit-analysis -->
-<dependency>
-    <groupId>com.graphhopper</groupId>
-    <artifactId>jsprit-analysis</artifactId>
-    <version>1.7.2</version>
-</dependency>
-
-
-<!-- https://mvnrepository.com/artifact/com.graphhopper/jsprit-io -->
-<dependency>
-    <groupId>com.graphhopper</groupId>
-    <artifactId>jsprit-io</artifactId>
-    <version>1.7.2</version>
-</dependency>
+    <!-- https://mvnrepository.com/artifact/com.graphhopper/jsprit-analysis -->
+    <dependency>
+        <groupId>com.graphhopper</groupId>
+        <artifactId>jsprit-analysis</artifactId>
+        <version>1.7.2</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/com.graphhopper/jsprit-io -->
+    <dependency>
+        <groupId>com.graphhopper</groupId>
+        <artifactId>jsprit-io</artifactId>
+        <version>1.7.2</version>
+    </dependency>
   </dependencies>
   
     <properties>
         <java.version>1.8</java.version>
     </properties>
-
 
     <build>
         <plugins>

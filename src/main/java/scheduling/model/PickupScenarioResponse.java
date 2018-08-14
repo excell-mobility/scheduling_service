@@ -3,7 +3,7 @@ package scheduling.model;
 import java.util.List;
 import java.util.Map;
 
-import beans.TransportProperties;
+import scheduling.beans.TransportProperties;
 
 public class PickupScenarioResponse {
 

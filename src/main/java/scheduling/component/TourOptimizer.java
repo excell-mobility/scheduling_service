@@ -8,20 +8,25 @@ import java.util.List;
 import java.util.NavigableSet;
 import java.util.TreeMap;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import beans.CalendarAppointment;
-import beans.GeoPoint;
+import scheduling.beans.CalendarAppointment;
+import scheduling.beans.GeoPoint;
 //import beans.Timeslot;
-import exceptions.RoutingNotFoundException;
-import rest.RoutingConnector;
+import scheduling.exceptions.RoutingNotFoundException;
+import scheduling.connector.RoutingConnector;
 import scheduling.model.PlanningResponse;
-import utility.DateAnalyser;
-import utility.MeasureConverter;
+import scheduling.utility.DateAnalyser;
+import scheduling.utility.MeasureConverter;
 
+@Component
 public class TourOptimizer {
 	
+	@Autowired
 	private final RoutingConnector routingConnector;
 	
 	private List<CalendarAppointment> appointments = new ArrayList<CalendarAppointment>();
@@ -33,9 +38,8 @@ public class TourOptimizer {
 	private GeoPoint endLocation;
 	private String calendarId;
 	
-	// dummy constructor
-	public TourOptimizer(RoutingConnector routingConnector) {
-		this.routingConnector = routingConnector;		
+	public TourOptimizer() {
+		this.routingConnector = new RoutingConnector();;		
 	}
 	
 	public TourOptimizer (List<CalendarAppointment> appointments, 
