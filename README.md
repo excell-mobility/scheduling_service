@@ -1,8 +1,9 @@
 # ExCELL Scheduling Service
 
-The Scheduling API is designed to optimize the route of a trip with multiple stops. It offers two endpoints which follow different purposes:
-schedulingnew finds the best fit for a new appointment into a given schedule of existing appointments (JSON array).
-schedulingcare plans the complete schedules for multiple cars. Therefore, it requires a detailed description (JSON) about different client constraints. The service acts as a wrapper for [jsprit](https://github.com/graphhopper/jsprit) by Graphhopper.
+The Scheduling API is designed to optimize the route of a trip with multiple stops. It offers three endpoints which follow different purposes:
+* `scheduling` finds the best fit for a new appointment into a given schedule of existing appointments (JSON array).
+* `schedulingcare` plans the complete schedules for multiple cars. Therefore, it requires a detailed description (JSON) about different client constraints. The service acts as a wrapper for [jsprit](https://github.com/graphhopper/jsprit) by Graphhopper.
+* `schedulingpickup` is very similar to the care scenario but is designed for pickup and delivery scenarios. The user has to define pickup objects in the JSON input instead of services.
 
 
 ## Setup
@@ -48,7 +49,6 @@ An online version of the scheduling API is available on the ExCELL Developer Por
 
 ## Contact
 
-* spieper [at] beuth-hochschule.de
 * fkunde [at] beuth-hochschule.de
 
 
