@@ -11,7 +11,7 @@ This web service comes as a [SpringBoot](https://projects.spring.io/spring-boot/
 
 ### Application properties
 
-Internally, the Scheduling Service calls the [ExCELL Routing API](https://github.com/excell-mobility/routing_service) and includes its results into the appointment planning. The user can set up his/her own Routing Service or use the online version on the [ExCELL Developer Portal](https://www.excell-mobility.de/developer/docs.php?service=routing_service). The parameter `url.routingservice` in the `application.properties` defines which endpoint is used. The URL of th eonline API is the default setting but it requires a user login which can be configured in the `application.properties` as well. If user authentification is not required change the parameter of `url.routingservice.auth` to `false`.
+Internally, the Scheduling Service calls the [ExCELL Routing API](https://github.com/excell-mobility/routing_service) and includes its results into the appointment planning. The user can set up his/her own Routing Service or use the online version on the [ExCELL Developer Portal](https://www.excell-mobility.de/developer/docs.php?service=routing_service). The parameter `url.routingservice` in the `application.properties` defines which endpoint is used. The URL of the online API is the default setting but it requires a user login which can be configured in the `application.properties` as well. By default, the token is provided by the [ExCELL API Gateway](https://dlr-integration.minglabs.com/api/v1/tokenauth/). If user authentification is not required change the parameter of `url.routingservice.auth` to `false`.
 
 ### Build it
 
