@@ -38,6 +38,7 @@ public class RoutingConnector {
 
 	public RoutingConnector() {
 		this.connector = new HttpConnector();
+		System.out.println("Auth for Routing: " + (requiresToken ? "yes" : "no"));
 	}
 
 	public synchronized int getTravelTime(GeoPoint start,
@@ -152,7 +153,7 @@ public class RoutingConnector {
 				result = this.connector.getConnectionString(urlStr);
 			}
 		} catch (IOException e) {
-			System.out.println("ERROR: Could not update graph with recent travel times: " + e.getClass().getSimpleName() + " - " +  e.getMessage());
+			System.out.println("ERROR: Could not call routing service: " + e.getClass().getSimpleName() + " - " +  e.getMessage());
 		}
 		
 		return result;
