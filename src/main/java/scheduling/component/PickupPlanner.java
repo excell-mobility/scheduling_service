@@ -81,7 +81,6 @@ public class PickupPlanner {
 			        vehicleTypeMap.put(capacity, vehicleType);
 				}
 			}
-			
 		}
 		
 

@@ -38,11 +38,10 @@ public class RoutingConnector {
 
 	public RoutingConnector() {
 		this.connector = new HttpConnector();
-		System.out.println("Auth for Routing: " + (requiresToken ? "yes" : "no"));
 	}
 
 	public synchronized int getTravelTime(GeoPoint start,
-			GeoPoint end) throws Exception {
+			GeoPoint end) throws RoutingNotFoundException {
 		String result = doRequest(createUrlString(start, end));
 		if (result == null || result.equals(""))
 			throw new RoutingNotFoundException("There's a problem with the connection");
@@ -51,7 +50,7 @@ public class RoutingConnector {
 	}
 
 	public synchronized double getTravelDistance(GeoPoint start,
-			GeoPoint end) throws IOException, RoutingNotFoundException {
+			GeoPoint end) throws RoutingNotFoundException {
 		String result = doRequest(createUrlString(start, end));
 		if (result == null || result.equals(""))
 			throw new RoutingNotFoundException("There's a problem with the connection");
@@ -60,7 +59,7 @@ public class RoutingConnector {
 	}
 	
 	public synchronized List<Double[]> getGPSCoordinates(GeoPoint start,
-			GeoPoint end) {
+			GeoPoint end) throws RoutingNotFoundException {
 		
 		List<Double[]> pointList = Lists.newLinkedList();
 		
@@ -84,7 +83,7 @@ public class RoutingConnector {
 		
 	}
 	
-	public synchronized List<Double[]> getRoute(GeoPoint[] points) {
+	public synchronized List<Double[]> getRoute(GeoPoint[] points) throws RoutingNotFoundException {
 		
 		List<Double[]> pointList = Lists.newLinkedList();
 		
@@ -116,7 +115,7 @@ public class RoutingConnector {
 			throw new RoutingNotFoundException("Coordinate missing. Can not perform routing!");
 	}
 
-	private String doRequest(String urlStr){
+	private String doRequest(String urlStr) throws RoutingNotFoundException{
 		String result = null;
 		try {
 			if (requiresToken) {
@@ -153,7 +152,8 @@ public class RoutingConnector {
 				result = this.connector.getConnectionString(urlStr);
 			}
 		} catch (IOException e) {
-			System.out.println("ERROR: Could not call routing service: " + e.getClass().getSimpleName() + " - " +  e.getMessage());
+			e.printStackTrace();
+			throw new RoutingNotFoundException("Could not call routing service!");
 		}
 		
 		return result;
