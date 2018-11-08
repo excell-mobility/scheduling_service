@@ -67,14 +67,14 @@ public class Application {
           .build()
           .genericModelSubstitutes(ResponseEntity.class)
           .protocols(Sets.newHashSet("https"))
-          .host("dlr-integration.minglabs.com")
+          .host("excell-mobility.de")
           .securitySchemes(Lists.newArrayList(apiKey()))
           .securityContexts(Lists.newArrayList(securityContext()))
           .apiInfo(apiInfo())
           .pathProvider(new RelativePathProvider(servletContext) {
                 @Override
                 public String getApplicationBasePath() {
-                    return "/api/v1/service-request/schedulingservice";
+                    return "/integration/api/v1/service-request/schedulingservice";
                 }
             });
     }
